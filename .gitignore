@@ -1,0 +1,11 @@
+# intellij files
+*.iml
+*.ipr
+*.iws
+
+# gradle
+/build/
+/.gradle
+.gradletasknamecache
+gradle-wrapper.jar
+gradle-wrapper.properties
