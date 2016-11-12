@@ -1,6 +1,7 @@
 package org.coinage.core.helpers;
 
 import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.Where;
 import org.coinage.core.models.Account;
 import org.coinage.core.models.AccountClosure;
@@ -9,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created At: 2016-11-06
@@ -146,32 +146,31 @@ public class AccountTreeHelper
 
     public List<Account> selfAndAncestors(Account account) throws SQLException
     {
-        List<Long> results = clsdao.queryBuilder()
+        QueryBuilder<AccountClosure, Long> q = clsdao.queryBuilder();
+        q.selectColumns(AccountClosure.COLUMN_ANCESTOR)
                 .orderBy(AccountClosure.COLUMN_DEPTH, true)
-                .where().eq(AccountClosure.COLUMN_DESCENDANT, account.getId()).query()
-                .stream().map(AccountClosure::getAncestor).collect(Collectors.toList());
-        return accdao.queryBuilder().where().in(Account.COLUMN_ID, results).query();
+                .where().eq(AccountClosure.COLUMN_DESCENDANT, account.getId());
+        return accdao.queryBuilder().where().in(Account.COLUMN_ID, q).query();
     }
 
     public List<Account> ancestors(Account account) throws SQLException
     {
-        List<Long> results = clsdao.queryBuilder()
+        QueryBuilder<AccountClosure, Long> q = clsdao.queryBuilder();
+        q.selectColumns(AccountClosure.COLUMN_ANCESTOR)
                 .orderBy(AccountClosure.COLUMN_DEPTH, true)
                 .where()
-                    .eq(AccountClosure.COLUMN_DESCENDANT, account.getId())
-                    .and().ne(AccountClosure.COLUMN_ANCESTOR, account.getId())
-                    .query()
-                .stream().map(AccountClosure::getAncestor).collect(Collectors.toList());
-        return accdao.queryBuilder().where().in(Account.COLUMN_ID, results).query();
+                .eq(AccountClosure.COLUMN_DESCENDANT, account.getId())
+                .and().ne(AccountClosure.COLUMN_ANCESTOR, account.getId());
+        return accdao.queryBuilder().where().in(Account.COLUMN_ID, q).query();
     }
 
     public AccountTreeNode selfAndDescendants(Account account) throws SQLException
     {
-        List<Long> results = clsdao.queryBuilder()
+        QueryBuilder<AccountClosure, Long> q = clsdao.queryBuilder();
+        q.selectColumns(AccountClosure.COLUMN_DESCENDANT)
                 .orderBy(AccountClosure.COLUMN_DEPTH, true)
-                .where().eq(AccountClosure.COLUMN_ANCESTOR, account.getId()).query()
-                .stream().map(AccountClosure::getDescendant).collect(Collectors.toList());
-        List<AccountTreeNode> result = buildAccountTree(accdao.queryBuilder().where().in(Account.COLUMN_ID, results).query());
+                .where().eq(AccountClosure.COLUMN_ANCESTOR, account.getId());
+        List<AccountTreeNode> result = buildAccountTree(accdao.queryBuilder().where().in(Account.COLUMN_ID, q).query());
         if (result.size() != 1) throw new SQLException("Expected single result");
         return result.get(0);
     }
@@ -204,12 +203,11 @@ public class AccountTreeHelper
     public Account root(Account account) throws SQLException
     {
         if (account.getParent() == null) return account;
-        List<AccountClosure> results = clsdao.queryBuilder().where()
-                .eq(AccountClosure.COLUMN_ANCESTOR_IS_ROOT, true)
-                .and().eq(AccountClosure.COLUMN_DESCENDANT, account.getId())
-                .query();
-        if (results.size() != 1) throw new SQLException("Expected single result");
-        return accdao.queryForId(results.get(0).getAncestor());
+        QueryBuilder<AccountClosure, Long> q = clsdao.queryBuilder();
+        q.selectColumns(AccountClosure.COLUMN_ANCESTOR);
+        q.where().eq(AccountClosure.COLUMN_ANCESTOR_IS_ROOT, true)
+                 .and().eq(AccountClosure.COLUMN_DESCENDANT, account.getId());
+        return accdao.queryBuilder().join(Account.COLUMN_ID, AccountClosure.COLUMN_ANCESTOR, q).queryForFirst();
     }
 
     private Where<Account, Long> siblingsQuery(Account account) throws SQLException
