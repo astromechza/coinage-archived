@@ -3,6 +3,9 @@ package test.coinage.core.models;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.logger.LocalLog;
+import com.j256.ormlite.logger.Slf4jLoggingLog;
+import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 import org.coinage.core.helpers.AccountTreeHelper;
@@ -13,23 +16,25 @@ import org.coinage.core.models.Transaction;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.LogManager;
 
 /**
  * Created At: 2016-11-10
  */
 public class TestTransaction
 {
+    private static final Logger LOG = LoggerFactory.getLogger(TestAccount.class);
+
     private final Dao<Transaction, Long> transDao;
     private final Dao<SubTransaction, Long> subtransDao;
     private final Dao<Account, Long> accountDao;
-    private Account account1;
-    private Account account2;
-    private Account account3;
-    private Transaction trans1;
-    private SubTransaction subtrans11;
 
     public TestTransaction() throws SQLException
     {
@@ -45,25 +50,41 @@ public class TestTransaction
         TableUtils.createTableIfNotExists(this.accountDao.getConnectionSource(), Account.class);
         TableUtils.createTableIfNotExists(this.transDao.getConnectionSource(), Transaction.class);
         TableUtils.createTableIfNotExists(this.subtransDao.getConnectionSource(), SubTransaction.class);
-
-        account1 = new Account("ac1");
-        account2 = new Account("ac2");
-        account3 = new Account("ac3");
-        trans1 = new Transaction(DateTime.now(), "");
-        subtrans11 = new SubTransaction(trans1, account1, account2, new BigDecimal(100.10));
-        subtrans11 = new SubTransaction(trans1, account1, account3, new BigDecimal(99.1231));
-
-        accountDao.create(account1);
-        accountDao.create(account2);
-        accountDao.create(account3);
-        transDao.create(trans1);
-        subtransDao.create(subtrans11);
-        subtransDao.create(subtrans11);
     }
 
     @Test
-    public void testBasic()
+    public void testBasic() throws SQLException
     {
+        Account a1 = new Account("account1");
+        accountDao.create(a1);
+        Account a2 = new Account("account2");
+        accountDao.create(a2);
+        Account a3 = new Account("account3");
+        accountDao.create(a3);
+        {
+            Transaction t1 = new Transaction(DateTime.now(), "my comment");
+            transDao.create(t1);
+
+            SubTransaction st1 = new SubTransaction(t1, a1, a2, new BigDecimal(100.142));
+            SubTransaction st2 = new SubTransaction(t1, a1, a3, new BigDecimal(87.12));
+            LOG.info(st1.toString());
+            LOG.info(st2.toString());
+            subtransDao.create(Arrays.asList(st1, st2));
+        }
+
+        // test some query ideas
+
+        QueryBuilder<Transaction, Long> q = transDao.queryBuilder();
+
+        for (Transaction t : q.query())
+        {
+            LOG.info(t.toString());
+            for (SubTransaction st : t.getSubTransactions())
+            {
+                LOG.info(st.toString());
+            }
+        }
+
 
     }
 }

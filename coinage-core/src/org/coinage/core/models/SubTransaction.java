@@ -12,19 +12,24 @@ import java.math.BigDecimal;
 @DatabaseTable(tableName = "subtransactions")
 public class SubTransaction
 {
-    @DatabaseField(generatedId = true)
+    public static final String COLUMN_ID = "id";
+    @DatabaseField(columnName = COLUMN_ID, generatedId = true)
     private Long id;
 
-    @DatabaseField(foreign = true)
+    public static final String COLUMN_TRANSACTION = "transaction";
+    @DatabaseField(columnName = COLUMN_TRANSACTION, foreign = true)
     private Transaction transaction;
 
-    @DatabaseField(foreign = true)
+    public static final String COLUMN_ACCOUNT_FROM = "account_from";
+    @DatabaseField(columnName = COLUMN_ACCOUNT_FROM, foreign = true)
     private Account from;
 
-    @DatabaseField(foreign = true)
+    public static final String COLUMN_ACCOUNT_TO = "account_to";
+    @DatabaseField(columnName = COLUMN_ACCOUNT_TO, foreign = true)
     private Account to;
 
-    @DatabaseField(dataType = DataType.BIG_DECIMAL_NUMERIC)
+    public static final String COLUMN_VALUE = "value";
+    @DatabaseField(columnName = COLUMN_VALUE, dataType = DataType.BIG_DECIMAL_NUMERIC)
     private BigDecimal value;
 
     SubTransaction() {}
@@ -80,5 +85,17 @@ public class SubTransaction
     public void setValue(BigDecimal value)
     {
         this.value = value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "SubTransaction{" +
+                "id=" + id +
+                ", transaction=" + transaction.getId() +
+                ", from=" + from.getName() +
+                ", to=" + to.getName() +
+                ", value=" + value +
+                '}';
     }
 }
