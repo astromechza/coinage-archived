@@ -37,6 +37,11 @@ public class Transaction
         this.comment = comment;
     }
 
+    public Transaction(long id)
+    {
+        this.id = id;
+    }
+
     public String getComment()
     {
         return comment;

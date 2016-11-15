@@ -28,13 +28,18 @@ public class SubTransaction
     @DatabaseField(columnName = COLUMN_VALUE, dataType = DataType.BIG_DECIMAL_NUMERIC)
     private BigDecimal value;
 
-    SubTransaction() {}
+    public SubTransaction() {}
 
     public SubTransaction(Transaction parent, Account account, BigDecimal value)
     {
         this.transaction = parent;
         this.account = account;
         this.value = value;
+    }
+
+    public SubTransaction(long id)
+    {
+        this.id = id;
     }
 
     public Account getAccount()

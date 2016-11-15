@@ -13,6 +13,7 @@ import javafx.scene.layout.HBox;
 import org.coinage.core.Resources;
 import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.Account;
+import org.coinage.core.models.AccountClosure;
 import org.coinage.gui.ConnectionSourceProvider;
 import org.coinage.gui.components.HExpander;
 import org.coinage.gui.dialogs.QuickDialogs;
@@ -150,16 +151,19 @@ public class NewAccountWindow extends BaseWindow
                 {
                     newAccount.setParent(selected.getId());
                 }
-                DaoManager.createDao(ConnectionSourceProvider.get(), Account.class).create(newAccount);
+                Dao<Account, Long> accountDao =  DaoManager.createDao(ConnectionSourceProvider.get(), Account.class);
+                Dao<AccountClosure, Long> acDao = DaoManager.createDao(ConnectionSourceProvider.get(), AccountClosure.class);
+                accountDao.create(newAccount);
+                new AccountTreeHelper(ConnectionSourceProvider.get()).refreshTree();
                 this.getStage().close();
             }
             catch (AssertionError er1)
             {
-                QuickDialogs.error("Account name is invalid! The name %s", er1.getMessage());
+                QuickDialogs.error("Account name is invalid! The name {}", er1.getMessage());
             }
             catch (SQLException er2)
             {
-                QuickDialogs.error("Failed to create new account! %s", er2.getMessage());
+                QuickDialogs.error("Failed to create new account! {}", er2.getMessage());
             }
         });
     }

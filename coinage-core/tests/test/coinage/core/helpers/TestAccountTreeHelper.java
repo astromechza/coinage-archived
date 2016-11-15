@@ -42,7 +42,7 @@ public class TestAccountTreeHelper
         ConnectionSource s = new JdbcConnectionSource("jdbc:sqlite::memory:");
         this.accountDao = DaoManager.createDao(s, Account.class);
         this.accountClosuresDao = DaoManager.createDao(s, AccountClosure.class);
-        this.treehelper = new AccountTreeHelper(this.accountDao, this.accountClosuresDao);
+        this.treehelper = new AccountTreeHelper(s);
     }
 
     @Before

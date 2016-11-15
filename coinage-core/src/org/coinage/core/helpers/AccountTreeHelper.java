@@ -1,8 +1,10 @@
 package org.coinage.core.helpers;
 
 import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.Where;
+import com.j256.ormlite.support.ConnectionSource;
 import org.coinage.core.models.Account;
 import org.coinage.core.models.AccountClosure;
 import org.slf4j.Logger;
@@ -20,10 +22,10 @@ public class AccountTreeHelper
     private final Dao<Account, Long> accdao;
     private final Dao<AccountClosure, Long> clsdao;
 
-    public AccountTreeHelper(Dao<Account, Long> accdao, Dao<AccountClosure, Long> clsdao)
+    public AccountTreeHelper(ConnectionSource source) throws SQLException
     {
-        this.accdao = accdao;
-        this.clsdao = clsdao;
+        this.accdao = DaoManager.createDao(source, Account.class);
+        this.clsdao = DaoManager.createDao(source, AccountClosure.class);
     }
 
     public static class AccountTreeNode

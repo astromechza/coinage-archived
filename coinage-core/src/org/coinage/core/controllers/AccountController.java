@@ -24,7 +24,7 @@ public class AccountController
         // construct required DAO's here
         this.accountDao = DaoManager.createDao(source, Account.class);
         this.accountClosureDao = DaoManager.createDao(source, AccountClosure.class);
-        this.accountTreeHelper = new AccountTreeHelper(this.accountDao, this.accountClosureDao);
+        this.accountTreeHelper = new AccountTreeHelper(source);
     }
 
     public void create(Account account) throws Exception

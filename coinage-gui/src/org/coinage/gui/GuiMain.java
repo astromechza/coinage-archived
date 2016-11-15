@@ -1,6 +1,7 @@
 package org.coinage.gui;
 
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.table.TableUtils;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -9,6 +10,8 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.coinage.core.Version;
+import org.coinage.core.models.Account;
+import org.coinage.core.models.AccountClosure;
 import org.coinage.gui.windows.MainWindow;
 
 import java.io.File;
@@ -58,6 +61,8 @@ public class GuiMain
         public void start(Stage primaryStage) throws Exception
         {
             ConnectionSourceProvider.set(new JdbcConnectionSource("jdbc:sqlite::memory:"));
+            TableUtils.createTableIfNotExists(ConnectionSourceProvider.get(), Account.class);
+            TableUtils.createTableIfNotExists(ConnectionSourceProvider.get(), AccountClosure.class);
             MainWindow window = new MainWindow(primaryStage);
             window.getStage().show();
             // TODO open the sqlite database given by getParameters().getRaw().get(0);

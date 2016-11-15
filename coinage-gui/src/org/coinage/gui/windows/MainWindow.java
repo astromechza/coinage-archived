@@ -4,10 +4,13 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
+import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import org.coinage.core.generators.AccountGenerator;
@@ -126,6 +129,12 @@ public class MainWindow extends BaseWindow
             catch (IOException | SQLException e)
             {
                 QuickDialogs.exception(e);
+            }
+        });
+        this.accountsTree.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2)
+            {
+
             }
         });
     }
