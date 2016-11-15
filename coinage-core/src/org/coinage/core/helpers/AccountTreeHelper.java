@@ -95,6 +95,8 @@ public class AccountTreeHelper
         Map<Long, AccountTreeNode> idToAccountMap = new HashMap<>();
         for (Account item : source)
         {
+            if (item.getId() == null) throw new IllegalArgumentException(
+                    String.format("Account %s does not have an id", item.getName()));
             idToAccountMap.put(item.getId(), new AccountTreeNode(item));
         }
 

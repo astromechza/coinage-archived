@@ -5,6 +5,7 @@ import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
+import org.coinage.core.generators.AccountGenerator;
 import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.Account;
 import org.coinage.core.models.AccountClosure;
@@ -50,17 +51,17 @@ public class TestAccountTreeHelper
         TableUtils.createTableIfNotExists(this.accountDao.getConnectionSource(), Account.class);
         TableUtils.createTableIfNotExists(this.accountClosuresDao.getConnectionSource(), AccountClosure.class);
 
-        this.ac1 = new Account("1");
-        this.ac11 = new Account("11", this.ac1);
-        this.ac12 = new Account("12", this.ac1);
-        this.ac121 = new Account("121", this.ac12);
-        this.ac2 = new Account("2");
-        this.ac3 = new Account("3");
-        this.ac31 = new Account("31", this.ac3);
-        this.ac311 = new Account("311", this.ac31);
-        this.ac3111 = new Account("3111", this.ac311);
-        this.ac3112 = new Account("3112", this.ac311);
-        this.ac3113 = new Account("3113", this.ac311);
+        this.ac1 = AccountGenerator.fakeAccount();
+        this.ac11 = AccountGenerator.fakeSubAccount(this.ac1);
+        this.ac12 = AccountGenerator.fakeSubAccount(this.ac1);
+        this.ac121 = AccountGenerator.fakeSubAccount(this.ac12);
+        this.ac2 = AccountGenerator.fakeAccount();
+        this.ac3 = AccountGenerator.fakeAccount();
+        this.ac31 = AccountGenerator.fakeSubAccount(this.ac3);
+        this.ac311 = AccountGenerator.fakeSubAccount(this.ac31);
+        this.ac3111 = AccountGenerator.fakeSubAccount(this.ac311);
+        this.ac3112 = AccountGenerator.fakeSubAccount(this.ac311);
+        this.ac3113 = AccountGenerator.fakeSubAccount(this.ac311);
 
         accountDao.create(this.ac1);
         accountDao.create(this.ac11);

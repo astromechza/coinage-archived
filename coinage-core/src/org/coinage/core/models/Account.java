@@ -16,14 +16,12 @@ public class Account
     private Long id;
 
     public static final String COLUMN_PARENT = "parent";
-    @DatabaseField(columnName = COLUMN_PARENT, foreign = true)
+    @DatabaseField(columnName = COLUMN_PARENT, foreign = true, uniqueCombo = true)
     private Account parent;
 
     public static final String COLUMN_NAME = "name";
-    @DatabaseField(columnName = COLUMN_NAME)
+    @DatabaseField(columnName = COLUMN_NAME, uniqueCombo = true)
     private String name;
-
-    private String cachedFullName = null;
 
     public static final Pattern NAME_PATTERN = Pattern.compile("[A-Z0-9][a-z0-9_\\-\\.]+");
 
@@ -38,6 +36,11 @@ public class Account
     public Account(String name)
     {
         this(name, null);
+    }
+
+    public Account(Long id)
+    {
+        this.id = id;
     }
 
     public Long getId()
@@ -63,6 +66,13 @@ public class Account
     public void setParent(Account parent)
     {
         this.parent = parent;
+    }
+
+    public void setParent(Long id)
+    {
+        Account fakeParent = new Account();
+        fakeParent.id = id;
+        this.parent = fakeParent;
     }
 
     @Override
@@ -98,4 +108,15 @@ public class Account
         if (!NAME_PATTERN.matcher(this.name).matches())
             throw new AssertionError("Account name does not match pattern " + NAME_PATTERN.pattern());
     }
+
+    public static final Pattern VALID_NAME_REGEX = Pattern.compile("^[A-Z][A-Za-z0-9_]+$");
+    public static void AssertValidAccountName(String name)
+    {
+        if (name.length() < 3) throw new AssertionError("is too short");
+        if (name.trim().length() != name.length()) throw new AssertionError("cannot start or end with whitespace");
+        if (!Character.isUpperCase(name.charAt(0))) throw new AssertionError("must start with capital letter");
+        if (!VALID_NAME_REGEX.matcher(name).matches())
+            throw new AssertionError("contains invalid characters");
+    }
+
 }

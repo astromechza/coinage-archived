@@ -20,23 +20,74 @@ repositories {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
+sourceSets {
+    gui {
+        java {
+            srcDirs = ['coinage-core/src', 'coinage-gui/src']
+        }
+        resources {
+            srcDirs = ['coinage-gui/resources']
+        }
+    }
+}
+
 // In this section you declare the dependencies for your production and test code
 dependencies {
-    // The production code uses the SLF4J logging API at compile time
-    compile 'org.slf4j:slf4j-api:1.7.21'
-    compile 'org.slf4j:slf4j-simple:1.7.21'
-    compile 'org.xerial:sqlite-jdbc:3.7.2'
-    compile 'com.j256.ormlite:ormlite-core:5.0'
-    compile 'com.j256.ormlite:ormlite-jdbc:5.0'
-    compile 'joda-time:joda-time:2.9.5'
 
-    // Declare the dependency for your favourite test framework you want to use in your tests.
-    // TestNG is also supported by the Gradle Test task. Just change the
-    // testCompile dependency to testCompile 'org.testng:testng:6.8.1' and add
-    // 'test.useTestNG()' to your build script.
+    guiCompile 'org.slf4j:slf4j-api:1.7.21'
+    guiCompile 'org.slf4j:slf4j-simple:1.7.21'
+    guiCompile 'org.xerial:sqlite-jdbc:3.7.2'
+    guiCompile 'com.j256.ormlite:ormlite-core:5.0'
+    guiCompile 'com.j256.ormlite:ormlite-jdbc:5.0'
+    guiCompile 'joda-time:joda-time:2.9.5'
+    guiCompile 'net.sourceforge.argparse4j:argparse4j:0.7.0'
+
     testCompile 'junit:junit:4.12'
 }
 
+/**
+ * Compile the GUI classes and package them into a fat jar with all the
+ * dependencies unpacked.
+ */
+task guiJar(type: Jar, dependsOn: guiClasses) {
+    archiveName = "coinage.jar"
+    // manifest details
+    manifest {
+        attributes 'Implementation-Title': 'Coinage Jar',
+                'Implementation-Version': '0.0.0',
+                'Main-Class': 'org.coinage.gui.GuiMain'
+    }
+    // copy in gui classes
+    from (sourceSets.gui.output.classesDir)
+    // copy in gui dependency libraries
+    from {
+        configurations.guiCompile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    // copy in resources
+    from (sourceSets.gui.output.resourcesDir) {
+        into("resources")
+    }
+}
+
+/**
+ * Build the GUI jar and run it!
+ */
+task guiJarRun(dependsOn: guiJar) {
+    doLast {
+        javaexec {
+            main = "-jar";
+            args = [
+                    guiJar.archivePath
+            ]
+        }
+    }
+}
+
+/**
+ * Copy all the dependency jars into a local 'lib' folder for consumption by IntelliJ.
+ */
 task copyRuntimeLibs(type: Copy) {
     into "lib"
     from configurations.runtime

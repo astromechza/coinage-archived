@@ -3,14 +3,10 @@ package test.coinage.core.models;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
-import com.j256.ormlite.logger.LocalLog;
-import com.j256.ormlite.logger.Slf4jLoggingLog;
 import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
-import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.Account;
-import org.coinage.core.models.AccountClosure;
 import org.coinage.core.models.SubTransaction;
 import org.coinage.core.models.Transaction;
 import org.joda.time.DateTime;
@@ -22,8 +18,6 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.List;
-import java.util.logging.LogManager;
 
 /**
  * Created At: 2016-11-10
@@ -65,8 +59,9 @@ public class TestTransaction
             Transaction t1 = new Transaction(DateTime.now(), "my comment");
             transDao.create(t1);
 
-            SubTransaction st1 = new SubTransaction(t1, a1, a2, new BigDecimal(100.142));
-            SubTransaction st2 = new SubTransaction(t1, a1, a3, new BigDecimal(87.12));
+            BigDecimal value = new BigDecimal(100.142);
+            SubTransaction st1 = new SubTransaction(t1, a1,value.negate());
+            SubTransaction st2 = new SubTransaction(t1, a3, value);
             LOG.info(st1.toString());
             LOG.info(st2.toString());
             subtransDao.create(Arrays.asList(st1, st2));

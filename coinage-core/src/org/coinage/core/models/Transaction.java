@@ -25,7 +25,8 @@ public class Transaction
     @DatabaseField(columnName = COLUMN_COMMENT, dataType = DataType.LONG_STRING)
     private String comment;
 
-    @ForeignCollectionField(eager = true)
+    public static final String VIRTUALCOLUMN_SUBTRANSACTIONS = "subtransactions";
+    @ForeignCollectionField(columnName = VIRTUALCOLUMN_SUBTRANSACTIONS, eager = true)
     private ForeignCollection<SubTransaction> subTransactions;
 
     Transaction() {}
@@ -64,6 +65,11 @@ public class Transaction
     public ForeignCollection<SubTransaction> getSubTransactions()
     {
         return subTransactions;
+    }
+
+    public void setSubTransactions(ForeignCollection<SubTransaction> st)
+    {
+        this.subTransactions = st;
     }
 
     @Override

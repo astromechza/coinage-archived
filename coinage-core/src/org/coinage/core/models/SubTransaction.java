@@ -20,13 +20,9 @@ public class SubTransaction
     @DatabaseField(columnName = COLUMN_TRANSACTION, foreign = true)
     private Transaction transaction;
 
-    public static final String COLUMN_ACCOUNT_FROM = "account_from";
-    @DatabaseField(columnName = COLUMN_ACCOUNT_FROM, foreign = true)
-    private Account from;
-
-    public static final String COLUMN_ACCOUNT_TO = "account_to";
-    @DatabaseField(columnName = COLUMN_ACCOUNT_TO, foreign = true)
-    private Account to;
+    public static final String COLUMN_ACCOUNT = "account";
+    @DatabaseField(columnName = COLUMN_ACCOUNT, foreign = true)
+    private Account account;
 
     public static final String COLUMN_VALUE = "value";
     @DatabaseField(columnName = COLUMN_VALUE, dataType = DataType.BIG_DECIMAL_NUMERIC)
@@ -34,37 +30,26 @@ public class SubTransaction
 
     SubTransaction() {}
 
-    public SubTransaction(Transaction parent, Account from, Account to, BigDecimal value)
+    public SubTransaction(Transaction parent, Account account, BigDecimal value)
     {
         this.transaction = parent;
-        this.from = from;
-        this.to = to;
+        this.account = account;
         this.value = value;
     }
 
-    public Account getFrom()
+    public Account getAccount()
     {
-        return from;
+        return account;
     }
 
-    public void setFrom(Account from)
+    public void setAccount(Account account)
     {
-        this.from = from;
+        this.account = account;
     }
 
     public Long getId()
     {
         return id;
-    }
-
-    public Account getTo()
-    {
-        return to;
-    }
-
-    public void setTo(Account to)
-    {
-        this.to = to;
     }
 
     public Transaction getTransaction()
@@ -93,8 +78,7 @@ public class SubTransaction
         return "SubTransaction{" +
                 "id=" + id +
                 ", transaction=" + transaction.getId() +
-                ", from=" + from.getName() +
-                ", to=" + to.getName() +
+                ", account=(" + account.getId() + ")" + account.getName() +
                 ", value=" + value +
                 '}';
     }
