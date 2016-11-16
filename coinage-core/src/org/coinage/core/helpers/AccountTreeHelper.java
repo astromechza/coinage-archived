@@ -201,7 +201,9 @@ public class AccountTreeHelper
 
     public List<Account> roots() throws SQLException
     {
-        return accdao.queryBuilder().where().isNull(Account.COLUMN_PARENT).query();
+        QueryBuilder<Account, Long> q = accdao.queryBuilder();
+        q.orderBy(Account.COLUMN_ID, true);
+        return q.where().isNull(Account.COLUMN_PARENT).query();
     }
 
     public Account root(Account account) throws SQLException
@@ -216,9 +218,11 @@ public class AccountTreeHelper
 
     private Where<Account, Long> siblingsQuery(Account account) throws SQLException
     {
+        QueryBuilder<Account, Long> q = accdao.queryBuilder();
+        q.orderBy(Account.COLUMN_ID, true);
         if (account.getParent() == null)
-            return accdao.queryBuilder().where().isNull(Account.COLUMN_PARENT);
-        return accdao.queryBuilder().where().eq(Account.COLUMN_PARENT, account.getParent());
+            return q.where().isNull(Account.COLUMN_PARENT);
+        return q.where().eq(Account.COLUMN_PARENT, account.getParent());
     }
 
     public List<Account> selfAndSiblings(Account account) throws SQLException

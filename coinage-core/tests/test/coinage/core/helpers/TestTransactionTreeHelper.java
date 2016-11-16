@@ -17,8 +17,12 @@ import org.coinage.gui.ConnectionSourceProvider;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created At: 2016-11-15
@@ -27,9 +31,12 @@ public class TestTransactionTreeHelper
 {
     private final TransactionTreeHelper transTreehelper;
     private final AccountTreeHelper accTreehelper;
-    private final Account accountA1;
-    private final Account accountA2;
-    private final Account accountB1;
+    private final Account accountExpenses;
+    private final Account accountExpensesGroceries;
+    private final Account accountExpensesElectricity;
+    private final Account accountExpensesEntertainment;
+    private final Account accountAssets;
+    private final Account accountAssetsCheque;
 
     public TestTransactionTreeHelper() throws SQLException
     {
@@ -44,41 +51,87 @@ public class TestTransactionTreeHelper
         TableUtils.createTableIfNotExists(s, SubTransaction.class);
 
         Dao<Account, Long> accountDao = DaoManager.createDao(s, Account.class);
-
-        accountA1 = AccountGenerator.fakeAccount();
-        accountDao.create(accountA1);
-        accountA2 = AccountGenerator.fakeSubAccount(accountA1);
-        accountDao.create(accountA2);
-        accountB1 = AccountGenerator.fakeAccount();
-        accountDao.create(accountB1);
-        accTreehelper.refreshTree();
-
         Dao<Transaction, Long> transactionDao = DaoManager.createDao(s, Transaction.class);
         Dao<SubTransaction, Long> subtransactionDao = DaoManager.createDao(s, SubTransaction.class);
 
-        for (int i = 0; i < 100; i++)
-        {
-            Transaction t = new Transaction(DateTime.now(), "");
-            t.setSubTransactions(transactionDao.getEmptyForeignCollection("subtransactions"));
-            if (i % 2 == 0)
-                TransactionGenerator.addSubtransactions(t, accountB1, accountA2);
-            else
-                TransactionGenerator.addSubtransactions(t, accountA2, accountB1);
-            transactionDao.create(t);
-            subtransactionDao.create(t.getSubTransactions());
-        }
+        accountExpenses = new Account("Expenses");
+        accountDao.create(accountExpenses);
+        accountExpensesGroceries = new Account("Groceries", accountExpenses);
+        accountExpensesElectricity = new Account("Electricity", accountExpenses);
+        accountExpensesEntertainment = new Account("Entertainment", accountExpenses);
+        accountDao.create(Arrays.asList(
+                accountExpensesGroceries,
+                accountExpensesElectricity,
+                accountExpensesEntertainment
+        ));
+
+        accountAssets = new Account("Assets");
+        accountDao.create(accountAssets);
+        accountAssetsCheque = new Account("Cheque", accountAssets);
+        accountDao.create(accountAssetsCheque);
+
+        new AccountTreeHelper(s).refreshTree();
+
+        Transaction t1 = new Transaction(DateTime.now(), "");
+        transactionDao.create(t1);
+        t1.setSubTransactions(transactionDao.getEmptyForeignCollection(Transaction.VIRTUALCOLUMN_SUBTRANSACTIONS));
+        t1.getSubTransactions().add(new SubTransaction(t1, accountAssetsCheque, new BigDecimal(-539.50)));
+        t1.getSubTransactions().add(new SubTransaction(t1, accountExpensesGroceries, accountAssetsCheque, new BigDecimal(39.50)));
+        t1.getSubTransactions().add(new SubTransaction(t1, accountExpensesElectricity, accountAssetsCheque, new BigDecimal(500)));
+
+        Transaction t2 = new Transaction(DateTime.now(), "");
+        transactionDao.create(t2);
+        t2.setSubTransactions(transactionDao.getEmptyForeignCollection(Transaction.VIRTUALCOLUMN_SUBTRANSACTIONS));
+        t1.getSubTransactions().add(new SubTransaction(t1, accountAssetsCheque, new BigDecimal(-40)));
+        t1.getSubTransactions().add(new SubTransaction(t1, accountExpensesEntertainment, accountAssetsCheque, new BigDecimal(40)));
     }
 
     @Test
-    public void testFetchSome() throws SQLException
+    public void testFetchTransactionsTo() throws SQLException
     {
-        List<SubTransaction>
-                subtransactions = new TransactionTreeHelper(ConnectionSourceProvider.get()).getTransactionsToAccountAndChildren(accountA2, null, null);
-        for (SubTransaction t : subtransactions)
-        {
-            System.out.println(t);
-            System.out.println(t.getTransaction());
-            System.out.println(t.getAccount());
-        }
+        List<SubTransaction> subtransactions = new TransactionTreeHelper(ConnectionSourceProvider.get())
+                .getTransactionsToAccountAndChildren(accountExpensesElectricity, null, null);
+
+        assertEquals(1, subtransactions.size());
+        SubTransaction t = subtransactions.get(0);
+        assertEquals(accountExpensesElectricity.getId(), t.getAccount().getId());
+        assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+    }
+
+    @Test
+    public void testFetchTransactionsToRoot() throws SQLException
+    {
+        List<SubTransaction> subtransactions = new TransactionTreeHelper(ConnectionSourceProvider.get())
+                .getTransactionsToAccountAndChildren(accountExpenses, null, null);
+
+        assertEquals(3, subtransactions.size());
+        SubTransaction t = subtransactions.get(0);
+        assertEquals(accountExpensesGroceries.getId(), t.getAccount().getId());
+        assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+        t = subtransactions.get(1);
+        assertEquals(accountExpensesElectricity.getId(), t.getAccount().getId());
+        assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+        t = subtransactions.get(2);
+        assertEquals(accountExpensesEntertainment.getId(), t.getAccount().getId());
+        assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+    }
+
+    @Test
+    public void testFetchTransactionsToSingle() throws SQLException
+    {
+        List<SubTransaction> subtransactions = new TransactionTreeHelper(ConnectionSourceProvider.get())
+                .getTransactionsToAccount(accountExpenses, null, null);
+        assertEquals(0, subtransactions.size());
+    }
+
+    @Test
+    public void testFetchTransactionsToSingleResult() throws SQLException
+    {
+        List<SubTransaction> subtransactions = new TransactionTreeHelper(ConnectionSourceProvider.get())
+                .getTransactionsToAccount(accountExpensesElectricity, null, null);
+        assertEquals(1, subtransactions.size());
+        SubTransaction t = subtransactions.get(0);
+        assertEquals(accountExpensesElectricity.getId(), t.getAccount().getId());
+        assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
     }
 }

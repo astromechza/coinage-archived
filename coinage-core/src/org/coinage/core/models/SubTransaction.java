@@ -24,11 +24,20 @@ public class SubTransaction
     @DatabaseField(columnName = COLUMN_ACCOUNT, foreign = true)
     private Account account;
 
+    public static final String COLUMN_SOURCE_ACCOUNT = "source_account";
+    @DatabaseField(columnName = COLUMN_SOURCE_ACCOUNT, foreign = true)
+    private Account sourceAccount;
+
     public static final String COLUMN_VALUE = "value";
     @DatabaseField(columnName = COLUMN_VALUE, dataType = DataType.BIG_DECIMAL_NUMERIC)
     private BigDecimal value;
 
     public SubTransaction() {}
+
+    public SubTransaction(long id)
+    {
+        this.id = id;
+    }
 
     public SubTransaction(Transaction parent, Account account, BigDecimal value)
     {
@@ -37,9 +46,12 @@ public class SubTransaction
         this.value = value;
     }
 
-    public SubTransaction(long id)
+    public SubTransaction(Transaction parent, Account account, Account sourceAccount, BigDecimal value)
     {
-        this.id = id;
+        this.transaction = parent;
+        this.account = account;
+        this.sourceAccount = sourceAccount;
+        this.value = value;
     }
 
     public Account getAccount()
@@ -50,6 +62,16 @@ public class SubTransaction
     public void setAccount(Account account)
     {
         this.account = account;
+    }
+
+    public Account getSourceAccount()
+    {
+        return sourceAccount;
+    }
+
+    public void setSourceAccount(Account sourceAccount)
+    {
+        this.sourceAccount = sourceAccount;
     }
 
     public Long getId()

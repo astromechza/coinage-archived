@@ -61,7 +61,7 @@ public class TestTransaction
 
             BigDecimal value = new BigDecimal(100.142);
             SubTransaction st1 = new SubTransaction(t1, a1,value.negate());
-            SubTransaction st2 = new SubTransaction(t1, a3, value);
+            SubTransaction st2 = new SubTransaction(t1, a3, a1, value);
             LOG.info(st1.toString());
             LOG.info(st2.toString());
             subtransDao.create(Arrays.asList(st1, st2));

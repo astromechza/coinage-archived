@@ -30,7 +30,7 @@ public class TransactionGenerator
     {
         BigDecimal value = new BigDecimal(random.nextInt(1000) / 100.0);
         SubTransaction st1 = new SubTransaction(t, from, value.negate());
-        SubTransaction st2 = new SubTransaction(t, to, value);
+        SubTransaction st2 = new SubTransaction(t, to, from, value);
         t.getSubTransactions().add(st1);
         t.getSubTransactions().add(st2);
         return t;

@@ -1,11 +1,9 @@
 package org.coinage.core.helpers;
 
 import com.j256.ormlite.dao.*;
-import com.j256.ormlite.field.types.BigDecimalNumericType;
 import com.j256.ormlite.field.types.DateTimeType;
 import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.support.ConnectionSource;
-import com.j256.ormlite.support.DatabaseResults;
 import org.coinage.core.LogTimer;
 import org.coinage.core.models.Account;
 import org.coinage.core.models.AccountClosure;
@@ -44,13 +42,14 @@ public class TransactionTreeHelper
         try(LogTimer ignored = new LogTimer(LOG, "get transactions for account tree " + accountId))
         {
             QueryBuilder<Transaction, Long> tq = this.tdao.queryBuilder();
+            tq.orderBy(Transaction.COLUMN_DATETIME, true);
             if (after != null)
                 tq.where().ge(Transaction.COLUMN_DATETIME, after);
             if (before != null)
                 tq.where().le(Transaction.COLUMN_DATETIME, before);
 
             QueryBuilder<AccountClosure, Long> aq = this.acldao.queryBuilder();
-            aq.selectColumns(Account.COLUMN_ID);
+            aq.selectColumns(AccountClosure.COLUMN_DESCENDANT);
             aq.where().eq(AccountClosure.COLUMN_ANCESTOR, accountId);
 
             QueryBuilder<SubTransaction, Long> stq = this.stdao.queryBuilder();
@@ -58,11 +57,10 @@ public class TransactionTreeHelper
 
             QueryBuilder<SubTransaction, Long> finalq =
                     stq.join(SubTransaction.COLUMN_TRANSACTION, Transaction.COLUMN_ID, tq);
+            finalq.orderByRaw("`transactions`.`datetime` ASC, `subtransactions`.`id` ASC");
             finalq.selectRaw(
-                    "`subtransactions`.`id`", "`subtransactions`.`transaction`", "`subtransactions`.`account`", "`subtransactions`.`value`",
+                    "`subtransactions`.`id`", "`subtransactions`.`transaction`", "`subtransactions`.`account`", "`subtransactions`.`source_account`", "`subtransactions`.`value`",
                     "`transactions`.`datetime`", "`transactions`.`comment`");
-
-            System.out.println(finalq.prepareStatementString());
 
             List<SubTransaction> output = new ArrayList<>();
 
@@ -72,17 +70,14 @@ public class TransactionTreeHelper
                         SubTransaction st = new SubTransaction(databaseResults.getLong(0));
                         st.setTransaction(new Transaction(databaseResults.getLong(1)));
                         st.setAccount(new Account(databaseResults.getLong(2)));
-                        st.setValue(new BigDecimal(databaseResults.getString(3)));
-                        st.getTransaction().setDatetime((DateTime) DateTimeType.getSingleton().sqlArgToJava(null, databaseResults.getLong(4), 0));
-                        st.getTransaction().setComment(databaseResults.getString(5));
+                        st.setSourceAccount(new Account(databaseResults.getLong(3)));
+                        st.setValue(new BigDecimal(databaseResults.getString(4)));
+                        st.getTransaction().setDatetime((DateTime) DateTimeType.getSingleton().sqlArgToJava(null, databaseResults.getLong(5), 0));
+                        st.getTransaction().setComment(databaseResults.getString(6));
                         return st;
                     });
 
-            for (SubTransaction transaction : custom)
-            {
-                output.add(transaction);
-            }
-
+            for (SubTransaction transaction : custom) output.add(transaction);
             return output;
         }
     }
@@ -107,13 +102,16 @@ public class TransactionTreeHelper
             QueryBuilder<SubTransaction, Long> stq = this.stdao.queryBuilder();
             stq.where().eq(SubTransaction.COLUMN_ACCOUNT, accountId);
 
-            return stq.join(SubTransaction.COLUMN_TRANSACTION, Transaction.COLUMN_ID, tq).query();
+            QueryBuilder<SubTransaction, Long> finalq =
+                    stq.join(SubTransaction.COLUMN_TRANSACTION, Transaction.COLUMN_ID, tq);
+
+            return finalq.query();
         }
     }
 
     public List<SubTransaction> getTransactionsToAccount(Account acc, DateTime after, DateTime before)
             throws SQLException
     {
-        return this.getTransactionsToAccountAndChildren(acc.getId(), after, before);
+        return this.getTransactionsToAccount(acc.getId(), after, before);
     }
 }
