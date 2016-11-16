@@ -5,8 +5,6 @@ import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
-import org.coinage.core.generators.AccountGenerator;
-import org.coinage.core.generators.TransactionGenerator;
 import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.helpers.TransactionTreeHelper;
 import org.coinage.core.models.Account;
@@ -23,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Created At: 2016-11-15
@@ -96,6 +95,9 @@ public class TestTransactionTreeHelper
         SubTransaction t = subtransactions.get(0);
         assertEquals(accountExpensesElectricity.getId(), t.getAccount().getId());
         assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+        assertNotNull(t.getTransaction());
+        assertNotNull(t.getTransaction().getDatetime());
+        assertNotNull(t.getTransaction().getComment());
     }
 
     @Test
@@ -114,6 +116,9 @@ public class TestTransactionTreeHelper
         t = subtransactions.get(2);
         assertEquals(accountExpensesEntertainment.getId(), t.getAccount().getId());
         assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+        assertNotNull(t.getTransaction());
+        assertNotNull(t.getTransaction().getDatetime());
+        assertNotNull(t.getTransaction().getComment());
     }
 
     @Test
@@ -133,5 +138,56 @@ public class TestTransactionTreeHelper
         SubTransaction t = subtransactions.get(0);
         assertEquals(accountExpensesElectricity.getId(), t.getAccount().getId());
         assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+        assertNotNull(t.getTransaction());
+        assertNotNull(t.getTransaction().getDatetime());
+        assertNotNull(t.getTransaction().getComment());
+    }
+
+    @Test
+    public void testFetchTransactionsFromAccountRoot() throws SQLException
+    {
+        List<SubTransaction> subtransactions = new TransactionTreeHelper(ConnectionSourceProvider.get())
+                .getTransactionsFromAccountAndChildren(accountAssets, null, null);
+        assertEquals(3, subtransactions.size());
+        SubTransaction t = subtransactions.get(0);
+        assertEquals(accountExpensesGroceries.getId(), t.getAccount().getId());
+        assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+        t = subtransactions.get(1);
+        assertEquals(accountExpensesElectricity.getId(), t.getAccount().getId());
+        assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+        t = subtransactions.get(2);
+        assertEquals(accountExpensesEntertainment.getId(), t.getAccount().getId());
+        assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+        assertNotNull(t.getTransaction());
+        assertNotNull(t.getTransaction().getDatetime());
+        assertNotNull(t.getTransaction().getComment());
+    }
+
+    @Test
+    public void testFetchTransactionsFromSingleEmpty() throws SQLException
+    {
+        List<SubTransaction> subtransactions = new TransactionTreeHelper(ConnectionSourceProvider.get())
+                .getTransactionsFromAccount(accountAssets, null, null);
+        assertEquals(0, subtransactions.size());
+    }
+
+    @Test
+    public void testFetchTransactionsFromSingle() throws SQLException
+    {
+        List<SubTransaction> subtransactions = new TransactionTreeHelper(ConnectionSourceProvider.get())
+                .getTransactionsFromAccount(accountAssetsCheque, null, null);
+        assertEquals(3, subtransactions.size());
+        SubTransaction t = subtransactions.get(0);
+        assertEquals(accountExpensesGroceries.getId(), t.getAccount().getId());
+        assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+        t = subtransactions.get(1);
+        assertEquals(accountExpensesElectricity.getId(), t.getAccount().getId());
+        assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+        t = subtransactions.get(2);
+        assertEquals(accountExpensesEntertainment.getId(), t.getAccount().getId());
+        assertEquals(accountAssetsCheque.getId(), t.getSourceAccount().getId());
+        assertNotNull(t.getTransaction());
+        assertNotNull(t.getTransaction().getDatetime());
+        assertNotNull(t.getTransaction().getComment());
     }
 }
