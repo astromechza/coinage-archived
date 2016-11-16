@@ -4,8 +4,7 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
-import javafx.event.EventHandler;
-import javafx.geometry.Orientation;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -31,7 +30,7 @@ import java.util.List;
 public class MainWindow extends BaseWindow
 {
     private AccountsTreeTableView accountsTree;
-    private TableView transactionTable;
+    private TabPane tabPane;
     private Menu fileMI;
     private Menu accountsMI;
     private MenuItem newAccountMI;
@@ -74,7 +73,7 @@ public class MainWindow extends BaseWindow
     public void initControls()
     {
         this.accountsTree = new AccountsTreeTableView();
-        this.transactionTable = new TableView();
+        this.tabPane = new TabPane();
 
         // menu items
         this.fileMI = new Menu("File");
@@ -96,16 +95,7 @@ public class MainWindow extends BaseWindow
         horizantalSplit.setDividerPosition(0, 0.3);
 
         horizantalSplit.getItems().add(accountsTree);
-
-        SplitPane verticalSplit = new SplitPane();
-        verticalSplit.setDividerPosition(0, 0.7);
-        verticalSplit.setOrientation(Orientation.VERTICAL);
-
-        verticalSplit.getItems().add(transactionTable);
-
-        verticalSplit.getItems().add(new Label("Graph not implemented yet"));
-
-        horizantalSplit.getItems().add(verticalSplit);
+        horizantalSplit.getItems().add(tabPane);
 
         outerLayout.setCenter(horizantalSplit);
         return outerLayout;
@@ -134,7 +124,15 @@ public class MainWindow extends BaseWindow
         this.accountsTree.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2)
             {
-
+                Node n = event.getPickResult().getIntersectedNode();
+                n = n.getParent();
+                if (!(n instanceof TreeTableRow)) n = n.getParent();
+                if (n instanceof TreeTableRow)
+                {
+                    TreeTableRow ttr = (TreeTableRow) n;
+                    AccountsTreeData data = (AccountsTreeData) ttr.getTreeItem().getValue();
+                    this.tabPane.getTabs().add(new Tab(data.getName()));
+                }
             }
         });
     }
