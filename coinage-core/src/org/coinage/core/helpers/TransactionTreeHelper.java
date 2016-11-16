@@ -35,17 +35,46 @@ public class TransactionTreeHelper
         this.stdao = DaoManager.createDao(source, SubTransaction.class);
     }
 
+    public List<SubTransaction> assembledDetailsSubTransactions(QueryBuilder<SubTransaction, Long> query)
+            throws SQLException
+    {
+        query.orderByRaw("`transactions`.`datetime` ASC, `subtransactions`.`id` ASC");
+        query.selectRaw(
+                "`subtransactions`.`id`", "`subtransactions`.`transaction`", "`subtransactions`.`account`", "`subtransactions`.`source_account`", "`subtransactions`.`value`",
+                "`transactions`.`datetime`", "`transactions`.`comment`");
+
+        GenericRawResults<SubTransaction> custom = this.stdao.queryRaw(
+                query.prepareStatementString(),
+                databaseResults -> {
+                    SubTransaction st = new SubTransaction(databaseResults.getLong(0));
+                    st.setTransaction(new Transaction(databaseResults.getLong(1)));
+                    st.setAccount(new Account(databaseResults.getLong(2)));
+                    st.setSourceAccount(new Account(databaseResults.getLong(3)));
+                    st.setValue(new BigDecimal(databaseResults.getString(4)));
+                    st.getTransaction().setDatetime((DateTime) DateTimeType.getSingleton().sqlArgToJava(null, databaseResults.getLong(5), 0));
+                    st.getTransaction().setComment(databaseResults.getString(6));
+                    return st;
+                });
+        return custom.getResults();
+    }
+
+    public QueryBuilder<Transaction, Long> transactionQuery(DateTime after, DateTime before) throws SQLException
+    {
+        QueryBuilder<Transaction, Long> tq = this.tdao.queryBuilder();
+        tq.orderBy(Transaction.COLUMN_DATETIME, true);
+        if (after != null)
+            tq.where().ge(Transaction.COLUMN_DATETIME, after);
+        if (before != null)
+            tq.where().le(Transaction.COLUMN_DATETIME, before);
+        return tq;
+    }
+
     public List<SubTransaction> getTransactionsToAccountAndChildren(long accountId, DateTime after, DateTime before)
             throws SQLException
     {
         try(LogTimer ignored = new LogTimer(LOG, "get transactions for account tree " + accountId))
         {
-            QueryBuilder<Transaction, Long> tq = this.tdao.queryBuilder();
-            tq.orderBy(Transaction.COLUMN_DATETIME, true);
-            if (after != null)
-                tq.where().ge(Transaction.COLUMN_DATETIME, after);
-            if (before != null)
-                tq.where().le(Transaction.COLUMN_DATETIME, before);
+            QueryBuilder<Transaction, Long> tq = this.transactionQuery(after, before);
 
             QueryBuilder<AccountClosure, Long> aq = this.acldao.queryBuilder();
             aq.selectColumns(AccountClosure.COLUMN_DESCENDANT);
@@ -56,24 +85,7 @@ public class TransactionTreeHelper
 
             QueryBuilder<SubTransaction, Long> finalq =
                     stq.join(SubTransaction.COLUMN_TRANSACTION, Transaction.COLUMN_ID, tq);
-            finalq.orderByRaw("`transactions`.`datetime` ASC, `subtransactions`.`id` ASC");
-            finalq.selectRaw(
-                    "`subtransactions`.`id`", "`subtransactions`.`transaction`", "`subtransactions`.`account`", "`subtransactions`.`source_account`", "`subtransactions`.`value`",
-                    "`transactions`.`datetime`", "`transactions`.`comment`");
-
-            GenericRawResults<SubTransaction> custom = this.stdao.queryRaw(
-                    finalq.prepareStatementString(),
-                    databaseResults -> {
-                        SubTransaction st = new SubTransaction(databaseResults.getLong(0));
-                        st.setTransaction(new Transaction(databaseResults.getLong(1)));
-                        st.setAccount(new Account(databaseResults.getLong(2)));
-                        st.setSourceAccount(new Account(databaseResults.getLong(3)));
-                        st.setValue(new BigDecimal(databaseResults.getString(4)));
-                        st.getTransaction().setDatetime((DateTime) DateTimeType.getSingleton().sqlArgToJava(null, databaseResults.getLong(5), 0));
-                        st.getTransaction().setComment(databaseResults.getString(6));
-                        return st;
-                    });
-            return custom.getResults();
+            return assembledDetailsSubTransactions(finalq);
         }
     }
 
@@ -88,36 +100,14 @@ public class TransactionTreeHelper
     {
         try(LogTimer ignored = new LogTimer(LOG, "get transactions for account " + accountId))
         {
-            QueryBuilder<Transaction, Long> tq = this.tdao.queryBuilder();
-            if (after != null)
-                tq.where().ge(Transaction.COLUMN_DATETIME, after);
-            if (before != null)
-                tq.where().le(Transaction.COLUMN_DATETIME, before);
+            QueryBuilder<Transaction, Long> tq = this.transactionQuery(after, before);
 
             QueryBuilder<SubTransaction, Long> stq = this.stdao.queryBuilder();
             stq.where().eq(SubTransaction.COLUMN_ACCOUNT, accountId);
 
             QueryBuilder<SubTransaction, Long> finalq =
                     stq.join(SubTransaction.COLUMN_TRANSACTION, Transaction.COLUMN_ID, tq);
-            finalq.orderByRaw("`transactions`.`datetime` ASC, `subtransactions`.`id` ASC");
-            finalq.selectRaw(
-                    "`subtransactions`.`id`", "`subtransactions`.`transaction`", "`subtransactions`.`account`",
-                    "`subtransactions`.`source_account`", "`subtransactions`.`value`",
-                    "`transactions`.`datetime`", "`transactions`.`comment`");
-
-            GenericRawResults<SubTransaction> custom = this.stdao.queryRaw(
-                    finalq.prepareStatementString(),
-                    databaseResults -> {
-                        SubTransaction st = new SubTransaction(databaseResults.getLong(0));
-                        st.setTransaction(new Transaction(databaseResults.getLong(1)));
-                        st.setAccount(new Account(databaseResults.getLong(2)));
-                        st.setSourceAccount(new Account(databaseResults.getLong(3)));
-                        st.setValue(new BigDecimal(databaseResults.getString(4)));
-                        st.getTransaction().setDatetime((DateTime) DateTimeType.getSingleton().sqlArgToJava(null, databaseResults.getLong(5), 0));
-                        st.getTransaction().setComment(databaseResults.getString(6));
-                        return st;
-                    });
-            return custom.getResults();
+            return assembledDetailsSubTransactions(finalq);
         }
     }
 
@@ -132,12 +122,7 @@ public class TransactionTreeHelper
     {
         try(LogTimer ignored = new LogTimer(LOG, "get transactions for account tree " + accountId))
         {
-            QueryBuilder<Transaction, Long> tq = this.tdao.queryBuilder();
-            tq.orderBy(Transaction.COLUMN_DATETIME, true);
-            if (after != null)
-                tq.where().ge(Transaction.COLUMN_DATETIME, after);
-            if (before != null)
-                tq.where().le(Transaction.COLUMN_DATETIME, before);
+            QueryBuilder<Transaction, Long> tq = this.transactionQuery(after, before);
 
             QueryBuilder<AccountClosure, Long> aq = this.acldao.queryBuilder();
             aq.selectColumns(AccountClosure.COLUMN_DESCENDANT);
@@ -147,25 +132,7 @@ public class TransactionTreeHelper
             stq.where().in(SubTransaction.COLUMN_SOURCE_ACCOUNT, aq);
 
             QueryBuilder<SubTransaction, Long> finalq = stq.join(SubTransaction.COLUMN_TRANSACTION, Transaction.COLUMN_ID, tq);
-            finalq.orderByRaw("`transactions`.`datetime` ASC, `subtransactions`.`id` ASC");
-            finalq.selectRaw(
-                    "`subtransactions`.`id`", "`subtransactions`.`transaction`", "`subtransactions`.`account`",
-                    "`subtransactions`.`source_account`", "`subtransactions`.`value`",
-                    "`transactions`.`datetime`", "`transactions`.`comment`");
-
-            GenericRawResults<SubTransaction> custom = this.stdao.queryRaw(
-                    finalq.prepareStatementString(),
-                    databaseResults -> {
-                        SubTransaction st = new SubTransaction(databaseResults.getLong(0));
-                        st.setTransaction(new Transaction(databaseResults.getLong(1)));
-                        st.setAccount(new Account(databaseResults.getLong(2)));
-                        st.setSourceAccount(new Account(databaseResults.getLong(3)));
-                        st.setValue(new BigDecimal(databaseResults.getString(4)));
-                        st.getTransaction().setDatetime((DateTime) DateTimeType.getSingleton().sqlArgToJava(null, databaseResults.getLong(5), 0));
-                        st.getTransaction().setComment(databaseResults.getString(6));
-                        return st;
-                    });
-            return custom.getResults();
+            return assembledDetailsSubTransactions(finalq);
         }
     }
 
@@ -180,36 +147,13 @@ public class TransactionTreeHelper
     {
         try(LogTimer ignored = new LogTimer(LOG, "get transactions for account " + accountId))
         {
-            QueryBuilder<Transaction, Long> tq = this.tdao.queryBuilder();
-            tq.orderBy(Transaction.COLUMN_DATETIME, true);
-            if (after != null)
-                tq.where().ge(Transaction.COLUMN_DATETIME, after);
-            if (before != null)
-                tq.where().le(Transaction.COLUMN_DATETIME, before);
+            QueryBuilder<Transaction, Long> tq = this.transactionQuery(after, before);
 
             QueryBuilder<SubTransaction, Long> stq = this.stdao.queryBuilder();
             stq.where().eq(SubTransaction.COLUMN_SOURCE_ACCOUNT, accountId);
 
             QueryBuilder<SubTransaction, Long> finalq = stq.join(SubTransaction.COLUMN_TRANSACTION, Transaction.COLUMN_ID, tq);
-            finalq.orderByRaw("`transactions`.`datetime` ASC, `subtransactions`.`id` ASC");
-            finalq.selectRaw(
-                    "`subtransactions`.`id`", "`subtransactions`.`transaction`", "`subtransactions`.`account`",
-                    "`subtransactions`.`source_account`", "`subtransactions`.`value`",
-                    "`transactions`.`datetime`", "`transactions`.`comment`");
-
-            GenericRawResults<SubTransaction> custom = this.stdao.queryRaw(
-                    finalq.prepareStatementString(),
-                    databaseResults -> {
-                        SubTransaction st = new SubTransaction(databaseResults.getLong(0));
-                        st.setTransaction(new Transaction(databaseResults.getLong(1)));
-                        st.setAccount(new Account(databaseResults.getLong(2)));
-                        st.setSourceAccount(new Account(databaseResults.getLong(3)));
-                        st.setValue(new BigDecimal(databaseResults.getString(4)));
-                        st.getTransaction().setDatetime((DateTime) DateTimeType.getSingleton().sqlArgToJava(null, databaseResults.getLong(5), 0));
-                        st.getTransaction().setComment(databaseResults.getString(6));
-                        return st;
-                    });
-            return custom.getResults();
+            return assembledDetailsSubTransactions(finalq);
         }
     }
 
@@ -218,5 +162,4 @@ public class TransactionTreeHelper
     {
         return getTransactionsFromAccount(account.getId(), after, before);
     }
-
 }
