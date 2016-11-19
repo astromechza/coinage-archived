@@ -19,7 +19,7 @@ public class QuickDialogs
 
     public static void info(String title, String header, String format, Object... args)
     {
-        LOG.info(format, args);
+        LOG.info(String.format(format, args));
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(header);
@@ -91,13 +91,13 @@ public class QuickDialogs
         return null;
     }
 
-    public static void error(String title, String heading, String message, Object... args)
+    public static void error(String title, String heading, String format, Object... args)
     {
-        LOG.error(message, args);
+        LOG.error(String.format(format, args));
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
         alert.setHeaderText(heading);
-        alert.setContentText(String.format(message, args));
+        alert.setContentText(String.format(format, args));
         alert.initModality(Modality.APPLICATION_MODAL);
         alert.showAndWait();
     }

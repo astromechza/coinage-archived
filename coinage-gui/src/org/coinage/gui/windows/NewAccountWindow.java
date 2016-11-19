@@ -152,18 +152,17 @@ public class NewAccountWindow extends BaseWindow
                     newAccount.setParent(selected.getId());
                 }
                 Dao<Account, Long> accountDao =  DaoManager.createDao(ConnectionSourceProvider.get(), Account.class);
-                Dao<AccountClosure, Long> acDao = DaoManager.createDao(ConnectionSourceProvider.get(), AccountClosure.class);
                 accountDao.create(newAccount);
-                new AccountTreeHelper(ConnectionSourceProvider.get()).refreshTree();
+                new AccountTreeHelper(ConnectionSourceProvider.get()).refreshSubTree(newAccount);
                 this.getStage().close();
             }
             catch (AssertionError er1)
             {
-                QuickDialogs.error("Account name is invalid! The name {}", er1.getMessage());
+                QuickDialogs.error("Account name is invalid! The name %s", er1.getMessage());
             }
             catch (SQLException er2)
             {
-                QuickDialogs.error("Failed to create new account! {}", er2.getMessage());
+                QuickDialogs.error("Failed to create new account! %s", er2.getMessage());
             }
         });
     }

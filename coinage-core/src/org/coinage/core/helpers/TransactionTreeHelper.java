@@ -162,4 +162,54 @@ public class TransactionTreeHelper
     {
         return getTransactionsFromAccount(account.getId(), after, before);
     }
+
+    public List<SubTransaction> getAllTransactionsForAccount(long accountId, DateTime after, DateTime before)
+            throws SQLException
+    {
+        try(LogTimer ignored = new LogTimer(LOG, "get all transactions for account " + accountId))
+        {
+            QueryBuilder<Transaction, Long> tq = this.transactionQuery(after, before);
+
+            QueryBuilder<SubTransaction, Long> stq = this.stdao.queryBuilder();
+            stq.where()
+                    .eq(SubTransaction.COLUMN_SOURCE_ACCOUNT, accountId)
+                    .or().eq(SubTransaction.COLUMN_ACCOUNT, accountId);
+
+            QueryBuilder<SubTransaction, Long> finalq = stq.join(SubTransaction.COLUMN_TRANSACTION, Transaction.COLUMN_ID, tq);
+            return assembledDetailsSubTransactions(finalq);
+        }
+    }
+
+    public List<SubTransaction> getAllTransactionsForAccount(Account account, DateTime after, DateTime before)
+            throws SQLException
+    {
+        return getAllTransactionsForAccount(account.getId(), after, before);
+    }
+
+    public List<SubTransaction> getAllTransactionsForAccountAndChildren(long accountId, DateTime after, DateTime before)
+            throws SQLException
+    {
+        try(LogTimer ignored = new LogTimer(LOG, "get all transactions for account " + accountId))
+        {
+            QueryBuilder<Transaction, Long> tq = this.transactionQuery(after, before);
+
+            QueryBuilder<AccountClosure, Long> aq = this.acldao.queryBuilder();
+            aq.selectColumns(AccountClosure.COLUMN_DESCENDANT);
+            aq.where().eq(AccountClosure.COLUMN_ANCESTOR, accountId);
+
+            QueryBuilder<SubTransaction, Long> stq = this.stdao.queryBuilder();
+            stq.where()
+                    .in(SubTransaction.COLUMN_SOURCE_ACCOUNT, aq)
+                    .or().in(SubTransaction.COLUMN_ACCOUNT, aq);
+
+            QueryBuilder<SubTransaction, Long> finalq = stq.join(SubTransaction.COLUMN_TRANSACTION, Transaction.COLUMN_ID, tq);
+            return assembledDetailsSubTransactions(finalq);
+        }
+    }
+
+    public List<SubTransaction> getAllTransactionsForAccountAndChildren(Account account, DateTime after, DateTime before)
+            throws SQLException
+    {
+        return getAllTransactionsForAccountAndChildren(account.getId(), after, before);
+    }
 }

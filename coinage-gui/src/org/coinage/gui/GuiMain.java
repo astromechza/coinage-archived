@@ -12,6 +12,8 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.coinage.core.Version;
 import org.coinage.core.models.Account;
 import org.coinage.core.models.AccountClosure;
+import org.coinage.core.models.SubTransaction;
+import org.coinage.core.models.Transaction;
 import org.coinage.gui.windows.MainWindow;
 
 import java.io.File;
@@ -24,6 +26,8 @@ public class GuiMain
 {
     public static void main(String[] args) throws ArgumentParserException
     {
+        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
+
         // Constructing parser and subcommands
         ArgumentParser parser = ArgumentParsers.newArgumentParser("bunkr");
 
@@ -50,6 +54,7 @@ public class GuiMain
                 .type(String.class)
                 .help("Open a particular database by file path");
 
+
         Namespace namespace = parser.parseArgs(args);
         String[] params = new String[]{namespace.get("database")};
         MainApplication.launch(MainApplication.class, params);
@@ -63,6 +68,8 @@ public class GuiMain
             ConnectionSourceProvider.set(new JdbcConnectionSource("jdbc:sqlite::memory:"));
             TableUtils.createTableIfNotExists(ConnectionSourceProvider.get(), Account.class);
             TableUtils.createTableIfNotExists(ConnectionSourceProvider.get(), AccountClosure.class);
+            TableUtils.createTableIfNotExists(ConnectionSourceProvider.get(), Transaction.class);
+            TableUtils.createTableIfNotExists(ConnectionSourceProvider.get(), SubTransaction.class);
             MainWindow window = new MainWindow(primaryStage);
             window.getStage().show();
             // TODO open the sqlite database given by getParameters().getRaw().get(0);

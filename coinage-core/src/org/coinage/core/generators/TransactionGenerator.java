@@ -3,6 +3,7 @@ package org.coinage.core.generators;
 import org.coinage.core.models.Account;
 import org.coinage.core.models.SubTransaction;
 import org.coinage.core.models.Transaction;
+import org.joda.time.DateTime;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -29,7 +30,7 @@ public class TransactionGenerator
     public static Transaction addSubtransactions(Transaction t, Account from, Account to)
     {
         BigDecimal value = new BigDecimal(random.nextInt(1000) / 100.0);
-        SubTransaction st1 = new SubTransaction(t, from, value.negate());
+        SubTransaction st1 = new SubTransaction(t, from, to, value.negate());
         SubTransaction st2 = new SubTransaction(t, to, from, value);
         t.getSubTransactions().add(st1);
         t.getSubTransactions().add(st2);

@@ -3,7 +3,6 @@ package org.coinage.gui.windows;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.support.ConnectionSource;
-import com.j256.ormlite.table.TableUtils;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -13,11 +12,17 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import org.coinage.core.generators.AccountGenerator;
+import org.coinage.core.generators.TransactionGenerator;
+import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.Account;
+import org.coinage.core.models.SubTransaction;
+import org.coinage.core.models.Transaction;
 import org.coinage.gui.ConnectionSourceProvider;
 import org.coinage.gui.components.treeview.AccountsTreeData;
 import org.coinage.gui.components.treeview.AccountsTreeTableView;
 import org.coinage.gui.dialogs.QuickDialogs;
+import org.coinage.gui.tabs.reports.AllTransactionsReport;
+import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -43,30 +48,36 @@ public class MainWindow extends BaseWindow
         try
         {
             ConnectionSource s = ConnectionSourceProvider.get();
-            this.buildTables(s);
             this.buildFakeData(s);
+
             this.accountsTree.refreshAll(s);
         }
-        catch (SQLException e)
+        catch (Exception e)
         {
             e.printStackTrace();
         }
     }
 
-    private void buildTables(ConnectionSource source) throws SQLException
-    {
-        TableUtils.createTableIfNotExists(source, Account.class);
-    }
-
-    private void buildFakeData(ConnectionSource source) throws SQLException
+    private void buildFakeData(ConnectionSource source) throws Exception
     {
         Dao<Account, Long> accountsDao = DaoManager.createDao(source, Account.class);
         List<Account> accounts = new ArrayList<>();
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 10; i++)
         {
             accounts.add(AccountGenerator.fakeAccountInTree(accounts));
         }
         accountsDao.create(accounts);
+
+        new AccountTreeHelper(source).refreshTree();
+
+        Dao<Transaction, Long> transactionsDao = DaoManager.createDao(source, Transaction.class);
+        for (int i = 0; i < 100; i++)
+        {
+            Transaction t = new Transaction(DateTime.now(), "");
+            t.setSubTransactions(transactionsDao.getEmptyForeignCollection("subtransactions"));
+            transactionsDao.create(t);
+            TransactionGenerator.addSubtransactions(t, accounts);
+        }
     }
 
     @Override
@@ -131,10 +142,20 @@ public class MainWindow extends BaseWindow
                 {
                     TreeTableRow ttr = (TreeTableRow) n;
                     AccountsTreeData data = (AccountsTreeData) ttr.getTreeItem().getValue();
-                    this.tabPane.getTabs().add(new Tab(data.getName()));
+                    this.tabPane.getTabs().add(new AllTransactionsReport(data.getName(), data.getId()));
                 }
             }
         });
+
+        try
+        {
+            DaoManager.createDao(ConnectionSourceProvider.get(), Account.class).registerObserver(
+                    () -> System.out.println("A Change Occured"));
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     @Override

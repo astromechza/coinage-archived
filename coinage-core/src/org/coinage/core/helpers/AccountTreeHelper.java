@@ -2,9 +2,11 @@ package org.coinage.core.helpers;
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.stmt.DeleteBuilder;
 import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.Where;
 import com.j256.ormlite.support.ConnectionSource;
+import org.coinage.core.LogTimer;
 import org.coinage.core.models.Account;
 import org.coinage.core.models.AccountClosure;
 import org.slf4j.Logger;
@@ -12,6 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created At: 2016-11-06
@@ -129,23 +133,83 @@ public class AccountTreeHelper
      */
     public void refreshTree() throws SQLException
     {
-        // fetch all accounts
-        List<AccountTreeNode> accountTree = buildAccountTree(accdao.queryForAll());
-
-        // now build all the things
-        List<AccountClosure> closures = new ArrayList<>();
-        Stack<Account> activeStack = new Stack<>();
-        for (AccountTreeNode n : accountTree)
+        try(LogTimer ignored = new LogTimer(LOG, "Rebuilding account closures"))
         {
-            // for each root item, do the thing!
-            buildClosureList(activeStack, n, closures);
+            // fetch all accounts
+            List<AccountTreeNode> accountTree = buildAccountTree(accdao.queryForAll());
+
+            // now build all the things
+            List<AccountClosure> closures = new ArrayList<>();
+            Stack<Account> activeStack = new Stack<>();
+            for (AccountTreeNode n : accountTree)
+            {
+                // for each root item, do the thing!
+                buildClosureList(activeStack, n, closures);
+            }
+
+            int deleted = clsdao.deleteBuilder().delete();
+            LOG.debug("Deleted {} existing Account closures", deleted);
+
+            LOG.debug("Writing {} Account closures", closures.size());
+            clsdao.create(closures);
         }
+    }
 
-        int deleted = clsdao.deleteBuilder().delete();
-        LOG.debug("Deleted {} existing Account closures", deleted);
+    /**
+     * Clear and rebuild the account closure table.
+     * @throws SQLException
+     */
+    public void refreshSubTree(Account stem) throws SQLException
+    {
+        try(LogTimer ignored = new LogTimer(LOG, "Rebuilding account closures"))
+        {
+            Account root = this.root(stem);
+            if (root == null)
+            {
+                root = stem;
+                if (stem.getParent() != null)
+                {
+                    root = this.root(stem.getParent());
+                }
+            }
 
-        LOG.debug("Writing {} Account closures", closures.size());
-        clsdao.create(closures);
+            // if best effort fails, then just refresh the whole thing
+            if (root == null)
+            {
+                refreshTree();
+                return;
+            }
+
+            // first fetch all underneath this root
+            QueryBuilder<AccountClosure, Long> accountsInSubTree = clsdao.queryBuilder();
+            accountsInSubTree.selectColumns(AccountClosure.COLUMN_DESCENDANT);
+            accountsInSubTree.where().eq(AccountClosure.COLUMN_ANCESTOR, root.getId());
+            List<Long> accountIds = accountsInSubTree.query().stream().map(AccountClosure::getDescendant).collect(Collectors.toList());
+            accountIds.add(root.getId());
+
+            QueryBuilder<Account, Long> accounts = accdao.queryBuilder();
+            accounts.where().in(Account.COLUMN_ID, accountIds);
+
+            // fetch all accounts
+            List<AccountTreeNode> accountTree = buildAccountTree(accounts.query());
+
+            // now build all the things
+            List<AccountClosure> closures = new ArrayList<>();
+            Stack<Account> activeStack = new Stack<>();
+            for (AccountTreeNode n : accountTree)
+            {
+                // for each root item, do the thing!
+                buildClosureList(activeStack, n, closures);
+            }
+
+            DeleteBuilder<AccountClosure, Long> deleteQuery = clsdao.deleteBuilder();
+            deleteQuery.where().in(AccountClosure.COLUMN_DESCENDANT, accountIds);
+            int deleted = deleteQuery.delete();
+            LOG.debug("Deleted {} existing Account closures", deleted);
+
+            LOG.debug("Writing {} Account closures", closures.size());
+            clsdao.create(closures);
+        }
     }
 
     public List<Account> selfAndAncestors(Account account) throws SQLException
@@ -233,5 +297,23 @@ public class AccountTreeHelper
     public List<Account> siblings(Account account) throws SQLException
     {
         return this.siblingsQuery(account).and().ne(Account.COLUMN_ID, account.getId()).query();
+    }
+
+    public static Map<Long, String> buildNameMap(List<AccountTreeNode> tree)
+    {
+        Map<Long, String> output = new HashMap<>();
+        for (AccountTreeNode node : tree) buildNameMap(node, "", output);
+        return output;
+    }
+
+    private static void buildNameMap(AccountTreeNode current, String prefix, Map<Long, String> output)
+    {
+        String name = current.value.getName();
+        if (prefix.length() > 0) name = prefix + "." + name;
+        output.put(current.value.getId(), name);
+        for (AccountTreeNode child : current.children)
+        {
+            buildNameMap(child, name, output);
+        }
     }
 }
