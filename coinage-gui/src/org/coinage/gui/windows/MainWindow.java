@@ -39,6 +39,7 @@ public class MainWindow extends BaseWindow
     private Menu fileMI;
     private Menu accountsMI;
     private MenuItem newAccountMI;
+    private MenuItem newTransactionMI;
 
     public MainWindow(Stage container) throws IOException
     {
@@ -90,6 +91,7 @@ public class MainWindow extends BaseWindow
         this.fileMI = new Menu("File");
         this.accountsMI = new Menu("Accounts");
         this.newAccountMI = new MenuItem("Add Account..");
+        this.newTransactionMI = new MenuItem("Add Transaction..");
     }
 
     @Override
@@ -98,7 +100,7 @@ public class MainWindow extends BaseWindow
         BorderPane outerLayout = new BorderPane();
 
         MenuBar menu = new MenuBar(this.fileMI, this.accountsMI);
-        this.accountsMI.getItems().addAll(this.newAccountMI);
+        this.accountsMI.getItems().addAll(this.newAccountMI, this.newTransactionMI);
 
         outerLayout.setTop(menu);
 
@@ -144,6 +146,17 @@ public class MainWindow extends BaseWindow
                     AccountsTreeData data = (AccountsTreeData) ttr.getTreeItem().getValue();
                     this.tabPane.getTabs().add(new AllTransactionsReport(data.getName(), data.getId()));
                 }
+            }
+        });
+
+        this.newTransactionMI.setOnAction(event -> {
+            try
+            {
+                new NewTransactionWindow().getStage().showAndWait();
+            }
+            catch (IOException e)
+            {
+                QuickDialogs.exception(e);
             }
         });
 

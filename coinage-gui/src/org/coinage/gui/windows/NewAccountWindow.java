@@ -194,14 +194,7 @@ public class NewAccountWindow extends BaseWindow
     {
         Scene scene = new Scene(this.getRootLayout());
         scene.getStylesheets().add(this.cssCommon);
-        try
-        {
-            scene.getStylesheets().add(Resources.getExternalPath("/resources/css/new-account-window.css"));
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        try { scene.getStylesheets().add(Resources.getExternalPath("/resources/css/new-account-window.css")); } catch (IOException e) { e.printStackTrace(); }
         this.getStage().setTitle("Coinage - New Account");
         this.getStage().setScene(scene);
         this.getStage().setResizable(true);
