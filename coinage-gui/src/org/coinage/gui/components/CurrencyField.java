@@ -1,4 +1,4 @@
-package org.coinage.gui;
+package org.coinage.gui.components;
 
 
 import javafx.beans.property.SimpleObjectProperty;

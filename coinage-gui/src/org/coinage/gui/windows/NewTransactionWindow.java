@@ -6,21 +6,28 @@ import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.util.StringConverter;
 import org.coinage.core.Resources;
 import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.Account;
 import org.coinage.gui.ConnectionSourceProvider;
-import org.coinage.gui.CurrencyField;
+import org.coinage.gui.components.CurrencyField;
 import org.coinage.gui.components.HExpander;
+import org.coinage.gui.components.TimeField;
+import org.coinage.gui.dialogs.QuickDialogs;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +36,15 @@ import java.util.List;
  */
 public class NewTransactionWindow extends BaseWindow
 {
+    private DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private DecimalFormat displayFormat = new DecimalFormat("#,###.00");
+    private Button cancelBtn;
+    private Button createBtn;
+    private Label fromAccountLabel;
+    private Label toAccountLabel;
+    private Label commentLabel;
+    private DatePicker dateField;
+
     private static class AccountComboItem
     {
         private final String name;
@@ -116,6 +132,29 @@ public class NewTransactionWindow extends BaseWindow
         this.newToAccountBtn = new Button("Add new row");
         this.totalLabel = new Label("R 0.00");
         this.commentBox = new TextArea();
+        cancelBtn = new Button("Cancel");
+        createBtn = new Button("Create");
+        fromAccountLabel = new Label("From account:");
+        toAccountLabel = new Label("To accounts:");
+        commentLabel = new Label("Transaction comment:");
+        dateField = new DatePicker();
+
+        dateField.setConverter(new StringConverter<LocalDate>() {
+            @Override
+            public String toString(LocalDate ld)
+            {
+                if (ld == null) return "";
+                return dateFormat.format(ld);
+            }
+
+            @Override
+            public LocalDate fromString(String s)
+            {
+                if (s == null || s.trim().isEmpty()) return null;
+                return LocalDate.parse(s, dateFormat);
+            }
+        });
+
     }
 
     @Override
@@ -124,42 +163,75 @@ public class NewTransactionWindow extends BaseWindow
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
 
-        root.setTop(new HBox(10,
-            new Label("From Account:"),
-            fromAccountBox,
-            new HExpander(),
-            totalLabel
-        ));
+        HBox topRow = new HBox(10, fromAccountLabel, fromAccountBox, new HExpander(), totalLabel);
+        topRow.setAlignment(Pos.CENTER);
+
+        HBox dateRow = new HBox(10, new Label("Transaction Date:"), dateField, new TimeField());
+        dateRow.setAlignment(Pos.CENTER);
+
+        VBox topRows = new VBox(10);
+        topRows.getChildren().add(topRow);
+        topRows.getChildren().add(dateRow);
+
+        root.setTop(topRows);
         HBox.setHgrow(fromAccountBox, Priority.ALWAYS);
         BorderPane middle = new BorderPane();
         middle.setPadding(new Insets(10, 0, 10, 0));
 
-
-        HBox toAccountsHeader = new HBox(10, new Label("To Accounts"), new HExpander(), this.newToAccountBtn);
+        HBox toAccountsHeader = new HBox(10, toAccountLabel, new HExpander(), this.newToAccountBtn);
+        toAccountsHeader.setAlignment(Pos.CENTER);
         middle.setTop(toAccountsHeader);
         BorderPane.setMargin(this.toAccountRows, new Insets(10, 0, 10, 0));
         middle.setCenter(this.toAccountRows);
 
         this.commentBox.setPrefSize(400, 100);
-        middle.setBottom(new VBox(10,
-                                  new Label("Transaction comment"),
-                                  this.commentBox));
+        VBox commentVBox = new VBox(10, commentLabel, this.commentBox);
+        middle.setBottom(commentVBox);
+
         root.setCenter(middle);
-
-        root.setBottom(new HBox(10,
-                new HExpander(),
-                new Button("Cancel"),
-                new Button("Create")
-        ));
-
+        root.setBottom(new HBox(10, new HExpander(), cancelBtn, createBtn));
         return root;
     }
 
     @Override
     public void bindEvents()
     {
-        this.newToAccountBtn.setOnAction(event -> {
-            this.addNewAccountRow();
+        this.newToAccountBtn.setOnAction(event -> this.addNewAccountRow());
+        this.cancelBtn.setOnAction(event -> this.getStage().close());
+        this.createBtn.setOnAction(event -> {
+            // first validate that all values are filled in
+            if (this.fromAccountBox.getSelectionModel().isEmpty())
+            {
+                QuickDialogs.error("Please select a from account!");
+                return;
+            }
+
+            // now validate that no toAccount == fromAccount
+            for (Node n : toAccountRows.getChildren())
+            {
+                HBox hb = (HBox)n;
+                ComboBox<AccountComboItem> cb = (ComboBox<AccountComboItem>)hb.getChildren().get(0);
+                CurrencyField cf = (CurrencyField)hb.getChildren().get(2);
+                if (cf.getDecimal() == null || cf.getDecimal().equals(BigDecimal.ZERO))
+                {
+                    QuickDialogs.error("One of your currency field inputs is empty or zero!");
+                    return;
+                }
+                else if (cb.getSelectionModel().isEmpty())
+                {
+                    QuickDialogs.error("One of your account select inputs is empty!");
+                    return;
+                }
+                else if (cb.getSelectionModel().getSelectedIndex() == fromAccountBox.getSelectionModel().getSelectedIndex())
+                {
+                    QuickDialogs.error("One of your account select inputs is equal to the from account!");
+                    return;
+                }
+            }
+
+            QuickDialogs.info("Great!");
+
+            //
         });
     }
 
@@ -213,7 +285,8 @@ public class NewTransactionWindow extends BaseWindow
             .forEach(value -> {
                 if (value != null) total[0] = total[0].add(value);
             });
-        totalLabel.setText("R " + total[0].negate().toString());
+
+        totalLabel.setText("R " + displayFormat.format(total[0].negate()));
     }
 
     private void checkPopDisabled()
