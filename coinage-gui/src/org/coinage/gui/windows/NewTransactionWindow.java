@@ -37,11 +37,10 @@ import java.util.List;
 public class NewTransactionWindow extends BaseWindow
 {
     private DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private DecimalFormat displayFormat = new DecimalFormat("#,###.00");
+    private DecimalFormat displayFormat = new DecimalFormat("#,##0.00");
     private Button cancelBtn;
     private Button createBtn;
     private Label fromAccountLabel;
-    private Label toAccountLabel;
     private Label commentLabel;
     private DatePicker dateField;
 
@@ -129,15 +128,15 @@ public class NewTransactionWindow extends BaseWindow
     {
         this.fromAccountBox = new ComboBox<>();
         this.toAccountRows = new VBox(10);
-        this.newToAccountBtn = new Button("Add new row");
+        this.newToAccountBtn = new Button("+");
         this.totalLabel = new Label("R 0.00");
         this.commentBox = new TextArea();
         cancelBtn = new Button("Cancel");
         createBtn = new Button("Create");
         fromAccountLabel = new Label("From account:");
-        toAccountLabel = new Label("To accounts:");
         commentLabel = new Label("Transaction comment:");
         dateField = new DatePicker();
+        dateField.setValue(LocalDate.now());
 
         dateField.setConverter(new StringConverter<LocalDate>() {
             @Override
@@ -164,10 +163,10 @@ public class NewTransactionWindow extends BaseWindow
         root.setPadding(new Insets(10));
 
         HBox topRow = new HBox(10, fromAccountLabel, fromAccountBox, new HExpander(), totalLabel);
-        topRow.setAlignment(Pos.CENTER);
+        topRow.setAlignment(Pos.CENTER_LEFT);
 
-        HBox dateRow = new HBox(10, new Label("Transaction Date:"), dateField, new TimeField());
-        dateRow.setAlignment(Pos.CENTER);
+        HBox dateRow = new HBox(10, new Label("Transaction Date:"), new HExpander(), dateField, new TimeField());
+        dateRow.setAlignment(Pos.CENTER_LEFT);
 
         VBox topRows = new VBox(10);
         topRows.getChildren().add(topRow);
@@ -178,11 +177,15 @@ public class NewTransactionWindow extends BaseWindow
         BorderPane middle = new BorderPane();
         middle.setPadding(new Insets(10, 0, 10, 0));
 
-        HBox toAccountsHeader = new HBox(10, toAccountLabel, new HExpander(), this.newToAccountBtn);
-        toAccountsHeader.setAlignment(Pos.CENTER);
-        middle.setTop(toAccountsHeader);
+        HBox toAccountsHeader = new HBox(10, new HExpander(), this.newToAccountBtn);
+        toAccountsHeader.setAlignment(Pos.CENTER_LEFT);
+
+        BorderPane pane2 = new BorderPane();
+        pane2.setCenter(this.toAccountRows);
+        pane2.setBottom(toAccountsHeader);
         BorderPane.setMargin(this.toAccountRows, new Insets(10, 0, 10, 0));
-        middle.setCenter(this.toAccountRows);
+
+        middle.setCenter(pane2);
 
         this.commentBox.setPrefSize(400, 100);
         VBox commentVBox = new VBox(10, commentLabel, this.commentBox);
