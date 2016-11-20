@@ -6,11 +6,10 @@ import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import org.coinage.core.Resources;
 import org.coinage.core.helpers.AccountTreeHelper;
@@ -63,6 +62,7 @@ public class NewTransactionWindow extends BaseWindow
     private Button newToAccountBtn;
     private VBox toAccountRows;
     private Label totalLabel;
+    private TextArea commentBox;
 
     public NewTransactionWindow() throws IOException
     {
@@ -114,7 +114,8 @@ public class NewTransactionWindow extends BaseWindow
         this.fromAccountBox = new ComboBox<>();
         this.toAccountRows = new VBox(10);
         this.newToAccountBtn = new Button("Add new row");
-        this.totalLabel = new Label("0.00");
+        this.totalLabel = new Label("R 0.00");
+        this.commentBox = new TextArea();
     }
 
     @Override
@@ -131,8 +132,18 @@ public class NewTransactionWindow extends BaseWindow
         ));
         HBox.setHgrow(fromAccountBox, Priority.ALWAYS);
         BorderPane middle = new BorderPane();
-        middle.setTop(new HBox(10, new Label("To Accounts"), new HExpander(), this.newToAccountBtn));
+        middle.setPadding(new Insets(10, 0, 10, 0));
+
+
+        HBox toAccountsHeader = new HBox(10, new Label("To Accounts"), new HExpander(), this.newToAccountBtn);
+        middle.setTop(toAccountsHeader);
+        BorderPane.setMargin(this.toAccountRows, new Insets(10, 0, 10, 0));
         middle.setCenter(this.toAccountRows);
+
+        this.commentBox.setPrefSize(400, 100);
+        middle.setBottom(new VBox(10,
+                                  new Label("Transaction comment"),
+                                  this.commentBox));
         root.setCenter(middle);
 
         root.setBottom(new HBox(10,
@@ -166,9 +177,7 @@ public class NewTransactionWindow extends BaseWindow
         try { scene.getStylesheets().add(Resources.getExternalPath("/resources/css/new-transaction-window.css")); } catch (IOException e) { e.printStackTrace(); }
         this.getStage().setTitle("Coinage - New Transaction");
         this.getStage().setScene(scene);
-        this.getStage().setResizable(true);
-        this.getStage().setMinWidth(400);
-        this.getStage().setMinHeight(300);
+        this.getStage().setResizable(false);
         return scene;
     }
 
@@ -178,11 +187,13 @@ public class NewTransactionWindow extends BaseWindow
         CurrencyField currfield = new CurrencyField('R');
         ComboBox<AccountComboItem> accountSelector = new ComboBox<>();
         accountSelector.setItems(this.accountItems);
-        HBox row = new HBox(10, accountSelector, currfield, pop);
+        HBox.setHgrow(accountSelector, Priority.ALWAYS);
+        HBox row = new HBox(10, accountSelector, new HExpander(), currfield, pop);
         pop.setOnAction(event -> {
             if (this.toAccountRows.getChildren().size() > 1)
             {
                 this.toAccountRows.getChildren().remove(row);
+                this.getStage().sizeToScene();
             }
             this.checkPopDisabled();
         });
@@ -191,13 +202,14 @@ public class NewTransactionWindow extends BaseWindow
         });
         this.toAccountRows.getChildren().add(row);
         this.checkPopDisabled();
+        this.getStage().sizeToScene();
     }
 
     private void recalculateTotal()
     {
         final BigDecimal[] total = { BigDecimal.ZERO };
         this.toAccountRows.getChildren().stream()
-            .map(node -> ((CurrencyField)((HBox) node).getChildren().get(1)).getDecimal())
+            .map(node -> ((CurrencyField)((HBox) node).getChildren().get(2)).getDecimal())
             .forEach(value -> {
                 if (value != null) total[0] = total[0].add(value);
             });
@@ -208,6 +220,6 @@ public class NewTransactionWindow extends BaseWindow
     {
         boolean popDisabled = this.toAccountRows.getChildren().size() <= 1;
         this.toAccountRows.getChildren().stream().forEach(
-                node -> ((HBox) node).getChildren().get(2).setDisable(popDisabled));
+                node -> ((HBox) node).getChildren().get(3).setDisable(popDisabled));
     }
 }
