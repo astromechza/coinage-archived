@@ -1,12 +1,10 @@
 package org.coinage.gui.components;
 
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
-import org.joda.time.LocalTime;
 
+import java.time.LocalTime;
 import java.util.regex.Pattern;
 
 /**
@@ -24,7 +22,7 @@ public class TimeField extends TextField
     {
         super();
         this.setMaxWidth(80);
-        this.timeProperty = new SimpleObjectProperty<>(new LocalTime(0, 0, 0));
+        this.timeProperty = new SimpleObjectProperty<>(LocalTime.of(12, 0, 0));
         this.setText("12:00:00");
 
         /**
@@ -114,7 +112,7 @@ public class TimeField extends TextField
         int hour = Integer.parseInt(content.substring(0, 2));
         int minute = Integer.parseInt(content.substring(3, 5));
         int second = Integer.parseInt(content.substring(6, 8));
-        return new LocalTime(hour, minute, second);
+        return LocalTime.of(hour, minute, second);
     }
 
 }

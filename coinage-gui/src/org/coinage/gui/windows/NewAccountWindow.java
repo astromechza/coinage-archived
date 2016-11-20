@@ -153,7 +153,7 @@ public class NewAccountWindow extends BaseWindow
                 }
                 Dao<Account, Long> accountDao =  DaoManager.createDao(ConnectionSourceProvider.get(), Account.class);
                 accountDao.create(newAccount);
-                new AccountTreeHelper(ConnectionSourceProvider.get()).refreshSubTree(newAccount);
+                new AccountTreeHelper(ConnectionSourceProvider.get()).refreshTree();
                 this.getStage().close();
             }
             catch (AssertionError er1)

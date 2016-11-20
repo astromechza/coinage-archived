@@ -26,7 +26,7 @@ public class GuiMain
 {
     public static void main(String[] args) throws ArgumentParserException
     {
-        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG");
+        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
 
         // Constructing parser and subcommands
         ArgumentParser parser = ArgumentParsers.newArgumentParser("bunkr");

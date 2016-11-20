@@ -87,7 +87,7 @@ public class AllTransactionsReport extends Tab
 
                     String tabName = String.format("All Transactions for %s", nameMap.get(AllTransactionsReport.this.accountId));
 
-                    String activePref = nameMap.get(AllTransactionsReport.this.accountId);
+                    String searchAccountName = nameMap.get(AllTransactionsReport.this.accountId);
 
                     long groupId = 0;
                     BigDecimal balance = new BigDecimal(0);
@@ -96,8 +96,9 @@ public class AllTransactionsReport extends Tab
                     List<TransactionTableRow> rows = new ArrayList<>();
                     for (SubTransaction st : tth.getAllTransactionsForAccountAndChildren(accountId, null, null))
                     {
-                        String currentName = nameMap.get(st.getAccount().getId());
-                        st.getAccount().setName(currentName);
+                        System.out.println(st);
+                        String toAccountName = nameMap.get(st.getAccount().getId());
+                        st.getAccount().setName(toAccountName);
 
                         if (st.getTransaction().getId() != groupId)
                         {
@@ -114,7 +115,7 @@ public class AllTransactionsReport extends Tab
                             groupId = st.getTransaction().getId();
                         }
 
-                        if (currentName.startsWith(activePref))
+                        if (toAccountName.startsWith(searchAccountName))
                         {
                             groupBalance = groupBalance.add(st.getValue());
                         }

@@ -45,40 +45,6 @@ public class MainWindow extends BaseWindow
     {
         super(container);
         this.initialise();
-
-        try
-        {
-            ConnectionSource s = ConnectionSourceProvider.get();
-            this.buildFakeData(s);
-
-            this.accountsTree.refreshAll(s);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    private void buildFakeData(ConnectionSource source) throws Exception
-    {
-        Dao<Account, Long> accountsDao = DaoManager.createDao(source, Account.class);
-        List<Account> accounts = new ArrayList<>();
-        for (int i = 0; i < 10; i++)
-        {
-            accounts.add(AccountGenerator.fakeAccountInTree(accounts));
-        }
-        accountsDao.create(accounts);
-
-        new AccountTreeHelper(source).refreshTree();
-
-        Dao<Transaction, Long> transactionsDao = DaoManager.createDao(source, Transaction.class);
-        for (int i = 0; i < 100; i++)
-        {
-            Transaction t = new Transaction(DateTime.now(), "");
-            t.setSubTransactions(transactionsDao.getEmptyForeignCollection("subtransactions"));
-            transactionsDao.create(t);
-            TransactionGenerator.addSubtransactions(t, accounts);
-        }
     }
 
     @Override

@@ -16,17 +16,23 @@ import javafx.util.StringConverter;
 import org.coinage.core.Resources;
 import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.Account;
+import org.coinage.core.models.SubTransaction;
+import org.coinage.core.models.Transaction;
 import org.coinage.gui.ConnectionSourceProvider;
 import org.coinage.gui.components.CurrencyField;
 import org.coinage.gui.components.HExpander;
 import org.coinage.gui.components.TimeField;
 import org.coinage.gui.dialogs.QuickDialogs;
+import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +49,7 @@ public class NewTransactionWindow extends BaseWindow
     private Label fromAccountLabel;
     private Label commentLabel;
     private DatePicker dateField;
+    private TimeField timeField;
 
     private static class AccountComboItem
     {
@@ -137,6 +144,7 @@ public class NewTransactionWindow extends BaseWindow
         commentLabel = new Label("Transaction comment:");
         dateField = new DatePicker();
         dateField.setValue(LocalDate.now());
+        timeField = new TimeField();
 
         dateField.setConverter(new StringConverter<LocalDate>() {
             @Override
@@ -165,7 +173,7 @@ public class NewTransactionWindow extends BaseWindow
         HBox topRow = new HBox(10, fromAccountLabel, fromAccountBox, new HExpander(), totalLabel);
         topRow.setAlignment(Pos.CENTER_LEFT);
 
-        HBox dateRow = new HBox(10, new Label("Transaction Date:"), new HExpander(), dateField, new TimeField());
+        HBox dateRow = new HBox(10, new Label("Transaction Date:"), new HExpander(), dateField, timeField);
         dateRow.setAlignment(Pos.CENTER_LEFT);
 
         VBox topRows = new VBox(10);
@@ -202,14 +210,12 @@ public class NewTransactionWindow extends BaseWindow
         this.newToAccountBtn.setOnAction(event -> this.addNewAccountRow());
         this.cancelBtn.setOnAction(event -> this.getStage().close());
         this.createBtn.setOnAction(event -> {
-            // first validate that all values are filled in
             if (this.fromAccountBox.getSelectionModel().isEmpty())
             {
                 QuickDialogs.error("Please select a from account!");
                 return;
             }
 
-            // now validate that no toAccount == fromAccount
             for (Node n : toAccountRows.getChildren())
             {
                 HBox hb = (HBox)n;
@@ -232,9 +238,53 @@ public class NewTransactionWindow extends BaseWindow
                 }
             }
 
-            QuickDialogs.info("Great!");
+            LocalDate selectedDate = dateField.valueProperty().get();
+            if (selectedDate == null)
+            {
+                QuickDialogs.error("Please fill in the date field!");
+                return;
+            }
 
-            //
+            LocalTime selectedTime = timeField.timeProperty.get();
+            if (selectedTime == null)
+            {
+                QuickDialogs.error("Please fill in the time field!");
+                return;
+            }
+
+            LocalDateTime ldt = selectedDate.atTime(selectedTime);
+            DateTime dt = new DateTime(ldt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+
+            try
+            {
+                Dao<Transaction, Long> transactionDao = DaoManager.createDao(ConnectionSourceProvider.get(), Transaction.class);
+                Dao<SubTransaction, Long> subtransactionDao = DaoManager.createDao(ConnectionSourceProvider.get(), SubTransaction.class);
+                Transaction transaction = new Transaction(dt, commentBox.getText().trim());
+                transaction.setSubTransactions(transactionDao.getEmptyForeignCollection("subtransactions"));
+                transactionDao.create(transaction);
+
+                Account fromA = new Account(fromAccountBox.selectionModelProperty().get().getSelectedItem().getId());
+                BigDecimal inversion = BigDecimal.ZERO;
+                List<SubTransaction> subtransactions = new ArrayList<>();
+                for (Node n : toAccountRows.getChildren())
+                {
+                    HBox hb = (HBox)n;
+                    ComboBox<AccountComboItem> cb = (ComboBox<AccountComboItem>)hb.getChildren().get(0);
+                    CurrencyField cf = (CurrencyField)hb.getChildren().get(2);
+
+                    Account toA = new Account(cb.selectionModelProperty().get().getSelectedItem().getId());
+                    subtransactions.add(new SubTransaction(transaction, toA, fromA, cf.getDecimal()));
+                    inversion = inversion.add(cf.getDecimal().negate());
+                }
+                subtransactions.add(new SubTransaction(transaction, fromA, inversion));
+                subtransactionDao.create(subtransactions);
+                this.getStage().close();
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
+
         });
     }
 

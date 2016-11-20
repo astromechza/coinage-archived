@@ -30,14 +30,14 @@ public class TransactionTable extends TableView<TransactionTableRow>
 
         TableColumn<TransactionTableRow, String> datetimeCol = new TableColumn<>("Date Time");
         TableColumn<TransactionTableRow, String> commentCol = new TableColumn<>("Comment");
-        TableColumn<TransactionTableRow, TransactionTableRow> toAccountCol = new TableColumn<>("To");
+        TableColumn<TransactionTableRow, TransactionTableRow> accountCol = new TableColumn<>("Accounts");
         TableColumn<TransactionTableRow, TransactionTableRow> valuesCol = new TableColumn<>("Values");
         TableColumn<TransactionTableRow, String> balanceCol = new TableColumn<>("Balance");
 
         this.getColumns().setAll(
                 datetimeCol,
                 commentCol,
-                toAccountCol,
+                accountCol,
                 valuesCol,
                 balanceCol
         );
@@ -46,12 +46,12 @@ public class TransactionTable extends TableView<TransactionTableRow>
 
         datetimeCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getDateTime().toString()));
         commentCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getComment()));
-        toAccountCol.setCellValueFactory(
+        accountCol.setCellValueFactory(
                 param -> new ReadOnlyObjectWrapper<>(param.getValue()));
         valuesCol.setCellValueFactory(
                 param -> new ReadOnlyObjectWrapper<>(param.getValue()));
 
-        toAccountCol.setCellFactory(
+        accountCol.setCellFactory(
                 new Callback<TableColumn<TransactionTableRow, TransactionTableRow>, TableCell<TransactionTableRow, TransactionTableRow>>() {
                     @Override
                     public TableCell<TransactionTableRow, TransactionTableRow> call(TableColumn<TransactionTableRow, TransactionTableRow> param)
