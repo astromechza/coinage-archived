@@ -13,3 +13,11 @@
 .table-value-unfocused {
     -fx-text-fill: #AAAAAA;
 }
+
+.transaction-table {
+    -fx-font-size: 11px;
+}
+
+.transaction-table-cell-wrapped {
+    -fx-wrap-text: true;
+}

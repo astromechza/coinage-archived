@@ -172,8 +172,10 @@ public class NewTransactionWindow extends BaseWindow
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
 
-        HBox topRow = new HBox(10, fromAccountLabel, fromAccountBox, new HExpander(), totalLabel);
+        HBox topRow = new HBox(10, fromAccountLabel, fromAccountBox, totalLabel);
         topRow.setAlignment(Pos.CENTER_LEFT);
+        fromAccountBox.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(fromAccountBox, Priority.ALWAYS);
 
         HBox dateRow = new HBox(10, new Label("Transaction Date:"), new HExpander(), dateField, timeField);
         dateRow.setAlignment(Pos.CENTER_LEFT);
@@ -183,7 +185,6 @@ public class NewTransactionWindow extends BaseWindow
         topRows.getChildren().add(dateRow);
 
         root.setTop(topRows);
-        HBox.setHgrow(fromAccountBox, Priority.ALWAYS);
         BorderPane middle = new BorderPane();
         middle.setPadding(new Insets(10, 0, 10, 0));
 
@@ -223,7 +224,7 @@ public class NewTransactionWindow extends BaseWindow
             {
                 HBox hb = (HBox)n;
                 ComboBox<AccountComboItem> cb = (ComboBox<AccountComboItem>)hb.getChildren().get(0);
-                CurrencyField cf = (CurrencyField)hb.getChildren().get(2);
+                CurrencyField cf = (CurrencyField)hb.getChildren().get(1);
                 if (cf.getDecimal() == null || cf.getDecimal().equals(BigDecimal.ZERO))
                 {
                     QuickDialogs.error("One of your currency field inputs is empty or zero!");
@@ -282,7 +283,7 @@ public class NewTransactionWindow extends BaseWindow
                 {
                     HBox hb = (HBox)n;
                     ComboBox<AccountComboItem> cb = (ComboBox<AccountComboItem>)hb.getChildren().get(0);
-                    CurrencyField cf = (CurrencyField)hb.getChildren().get(2);
+                    CurrencyField cf = (CurrencyField)hb.getChildren().get(1);
 
                     Account toA = new Account(cb.selectionModelProperty().get().getSelectedItem().getId());
                     subtransactions.add(new SubTransaction(transaction, toA, fromA, cf.getDecimal()));
@@ -324,8 +325,9 @@ public class NewTransactionWindow extends BaseWindow
         CurrencyField currfield = new CurrencyField('R');
         ComboBox<AccountComboItem> accountSelector = new ComboBox<>();
         accountSelector.setItems(this.accountItems);
+        accountSelector.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(accountSelector, Priority.ALWAYS);
-        HBox row = new HBox(10, accountSelector, new HExpander(), currfield, pop);
+        HBox row = new HBox(10, accountSelector, currfield, pop);
         pop.setOnAction(event -> {
             if (this.toAccountRows.getChildren().size() > 1)
             {
@@ -346,7 +348,7 @@ public class NewTransactionWindow extends BaseWindow
     {
         final BigDecimal[] total = { BigDecimal.ZERO };
         this.toAccountRows.getChildren().stream()
-            .map(node -> ((CurrencyField)((HBox) node).getChildren().get(2)).getDecimal())
+            .map(node -> ((CurrencyField)((HBox) node).getChildren().get(1)).getDecimal())
             .forEach(value -> {
                 if (value != null) total[0] = total[0].add(value);
             });
@@ -358,6 +360,6 @@ public class NewTransactionWindow extends BaseWindow
     {
         boolean popDisabled = this.toAccountRows.getChildren().size() <= 1;
         this.toAccountRows.getChildren().stream().forEach(
-                node -> ((HBox) node).getChildren().get(3).setDisable(popDisabled));
+                node -> ((HBox) node).getChildren().get(2).setDisable(popDisabled));
     }
 }

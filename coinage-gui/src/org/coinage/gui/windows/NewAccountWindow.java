@@ -114,6 +114,7 @@ public class NewAccountWindow extends BaseWindow
         GridPane formGrid = new GridPane();
         formGrid.add(new Label("Parent:"), 0, 0); formGrid.add(this.parentBox, 1, 0);
         GridPane.setMargin(this.parentBox, new Insets(10, 0, 0, 20));
+        this.parentBox.setMaxWidth(Double.MAX_VALUE);
         formGrid.add(new Label("Account Name:"), 0, 1); formGrid.add(this.nameBox, 1, 1);
         GridPane.setMargin(this.nameBox, new Insets(10, 0, 10, 20));
         formGrid.add(this.messageField, 0, 2);
@@ -200,7 +201,8 @@ public class NewAccountWindow extends BaseWindow
         try { scene.getStylesheets().add(Resources.getExternalPath("/resources/css/new-account-window.css")); } catch (IOException e) { e.printStackTrace(); }
         this.getStage().setTitle("Coinage - New Account");
         this.getStage().setScene(scene);
-        this.getStage().setResizable(true);
+        this.getStage().setResizable(false);
+        this.getStage().setMinWidth(400);
         return scene;
     }
 

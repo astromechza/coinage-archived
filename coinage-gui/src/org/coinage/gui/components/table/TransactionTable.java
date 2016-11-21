@@ -1,16 +1,19 @@
 package org.coinage.gui.components.table;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.NumberExpression;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableStringValue;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextBoundsType;
 import javafx.util.Callback;
 import org.coinage.core.models.SubTransaction;
 import org.coinage.core.models.Transaction;
@@ -39,6 +42,7 @@ public class TransactionTable extends TableView<TransactionTableRow>
 
     public TransactionTable(String focusPrefix)
     {
+        this.getStyleClass().add("transaction-table");
         this.focusPrefix = new SimpleStringProperty(focusPrefix);
         this.contents = FXCollections.observableArrayList();
         this.setItems(this.contents);
@@ -61,12 +65,25 @@ public class TransactionTable extends TableView<TransactionTableRow>
 
         this.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
+        datetimeCol.setCellFactory(param -> {
+            TableCell<TransactionTableRow, String> cell = new TableCell<>();
+            Text text = new Text();
+            cell.setGraphic(text);
+            text.textProperty().bind(cell.itemProperty());
+            cell.setAlignment(Pos.CENTER);
+            return cell;
+        });
         datetimeCol.setCellValueFactory(param -> new SimpleStringProperty(dateFormat.print(param.getValue().getDateTime())));
+
+        commentCol.setCellFactory(param -> {
+            TableCell<TransactionTableRow, String> cell = new TableCell<>();
+            Text text = new Text();
+            cell.setGraphic(text);
+            text.wrappingWidthProperty().bind(commentCol.widthProperty());
+            text.textProperty().bind(cell.itemProperty());
+            return cell;
+        });
         commentCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getComment()));
-        accountCol.setCellValueFactory(
-                param -> new ReadOnlyObjectWrapper<>(param.getValue()));
-        valuesCol.setCellValueFactory(
-                param -> new ReadOnlyObjectWrapper<>(param.getValue()));
 
         accountCol.setCellFactory(
                 new Callback<TableColumn<TransactionTableRow, TransactionTableRow>, TableCell<TransactionTableRow, TransactionTableRow>>() {
@@ -98,6 +115,7 @@ public class TransactionTable extends TableView<TransactionTableRow>
                         };
                     }
                 });
+        accountCol.setCellValueFactory(param -> new ReadOnlyObjectWrapper<>(param.getValue()));
 
         valuesCol.setCellFactory(
                 new Callback<TableColumn<TransactionTableRow, TransactionTableRow>, TableCell<TransactionTableRow, TransactionTableRow>>() {
@@ -129,8 +147,16 @@ public class TransactionTable extends TableView<TransactionTableRow>
                         };
                     }
                 });
+        valuesCol.setCellValueFactory(param -> new ReadOnlyObjectWrapper<>(param.getValue()));
 
-
+        balanceCol.setCellFactory(param -> {
+            TableCell<TransactionTableRow, String> cell = new TableCell<>();
+            Text text = new Text();
+            cell.setGraphic(text);
+            text.textProperty().bind(cell.itemProperty());
+            cell.setAlignment(Pos.CENTER);
+            return cell;
+        });
         balanceCol.setCellValueFactory(param -> new SimpleStringProperty(displayFormat.format(param.getValue().getBalance())));
     }
 
