@@ -1,0 +1,15 @@
+.table-account-focused {
+    -fx-font-weight: bold;
+}
+
+.table-account-unfocused {
+    -fx-text-fill: #AAAAAA;
+}
+
+.table-value-focused {
+    -fx-font-weight: bold;
+}
+
+.table-value-unfocused {
+    -fx-text-fill: #AAAAAA;
+}

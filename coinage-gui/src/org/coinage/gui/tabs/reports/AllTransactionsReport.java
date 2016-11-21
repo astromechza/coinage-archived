@@ -151,6 +151,7 @@ public class AllTransactionsReport extends Tab
                     }
 
                     Platform.runLater(() -> {
+                        AllTransactionsReport.this.transactionTable.focusPrefix().setValue(searchAccountName);
                         AllTransactionsReport.this.reportLabel.setText(tabName);
                         AllTransactionsReport.this.transactionTable.getItems().addAll(rows);
                         AllTransactionsReport.this.rootStack.getChildren()
