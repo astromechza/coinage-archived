@@ -92,11 +92,11 @@ public class AllTransactionsReport extends Tab
                     long groupId = 0;
                     BigDecimal balance = new BigDecimal(0);
                     BigDecimal groupBalance = new BigDecimal(0);
+                    boolean groupHasNegative = false;
                     List<SubTransaction> group = new ArrayList<>();
                     List<TransactionTableRow> rows = new ArrayList<>();
                     for (SubTransaction st : tth.getAllTransactionsForAccountAndChildren(accountId, null, null))
                     {
-                        System.out.println(st);
                         String toAccountName = nameMap.get(st.getAccount().getId());
                         st.getAccount().setName(toAccountName);
 
@@ -106,17 +106,28 @@ public class AllTransactionsReport extends Tab
                             {
                                 if (groupBalance.compareTo(BigDecimal.ZERO) != 0)
                                 {
+                                    if (!groupHasNegative)
+                                    {
+                                        Account sourceAccount = group.get(0).getSourceAccount();
+                                        sourceAccount.setName(nameMap.get(sourceAccount.getId()));
+                                        group.add(new SubTransaction(null, sourceAccount, groupBalance.negate()));
+                                    }
                                     balance = balance.add(groupBalance);
                                     rows.add(new TransactionTableRow(group, balance));
                                 }
                                 groupBalance = BigDecimal.ZERO;
                                 group = new ArrayList<>();
+                                groupHasNegative = false;
                             }
                             groupId = st.getTransaction().getId();
                         }
 
                         if (toAccountName.startsWith(searchAccountName))
                         {
+                            if (st.getValue().compareTo(BigDecimal.ZERO) < 0)
+                            {
+                                groupHasNegative = true;
+                            }
                             groupBalance = groupBalance.add(st.getValue());
                         }
                         group.add(st);
@@ -125,6 +136,12 @@ public class AllTransactionsReport extends Tab
                     {
                         if (groupBalance.compareTo(BigDecimal.ZERO) != 0)
                         {
+                            if (!groupHasNegative)
+                            {
+                                Account sourceAccount = group.get(0).getSourceAccount();
+                                sourceAccount.setName(nameMap.get(sourceAccount.getId()));
+                                group.add(new SubTransaction(null, sourceAccount, groupBalance.negate()));
+                            }
                             balance = balance.add(groupBalance);
                             rows.add(new TransactionTableRow(group, balance));
                         }

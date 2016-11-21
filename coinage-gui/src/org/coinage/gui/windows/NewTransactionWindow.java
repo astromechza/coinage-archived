@@ -35,7 +35,9 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created At: 2016-11-19
@@ -216,6 +218,7 @@ public class NewTransactionWindow extends BaseWindow
                 return;
             }
 
+            Set<Long> mentionedAccounts = new HashSet<>();
             for (Node n : toAccountRows.getChildren())
             {
                 HBox hb = (HBox)n;
@@ -236,7 +239,16 @@ public class NewTransactionWindow extends BaseWindow
                     QuickDialogs.error("One of your account select inputs is equal to the from account!");
                     return;
                 }
+                Long l = cb.getSelectionModel().getSelectedItem().getId();
+                if (mentionedAccounts.contains(l))
+                {
+                    QuickDialogs.error("You've selected the same account more than once, please combine those!");
+                    return;
+                }
+                mentionedAccounts.add(l);
             }
+
+
 
             LocalDate selectedDate = dateField.valueProperty().get();
             if (selectedDate == null)
