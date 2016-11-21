@@ -133,7 +133,7 @@ public class NewAccountWindow extends BaseWindow
         this.nameBox.textProperty().addListener((observable, oldValue, newValue) -> {
             try
             {
-                Account.AssertValidAccountName(newValue);
+                Account.AssertValidAccountTree(newValue);
                 setMessageToSuccess();
             }
             catch (AssertionError e)
@@ -142,17 +142,20 @@ public class NewAccountWindow extends BaseWindow
             }
         });
         this.createBtn.setOnAction(e -> {
+            String nameContent = this.nameBox.getText();
+            Account.AssertValidAccountTree(nameContent);
+            AccountComboItem selected = this.parentBox.getSelectionModel().getSelectedItem();
+            Long parentId = selected.getId();
             try
             {
-                Account.AssertValidAccountName(this.nameBox.getText());
-                AccountComboItem selected = this.parentBox.getSelectionModel().getSelectedItem();
-                Account newAccount = new Account(this.nameBox.getText());
-                if (selected.getId() != null)
-                {
-                    newAccount.setParent(selected.getId());
-                }
                 Dao<Account, Long> accountDao =  DaoManager.createDao(ConnectionSourceProvider.get(), Account.class);
-                accountDao.create(newAccount);
+                for (String namePart : nameContent.split("\\."))
+                {
+                    Account newAccount = new Account(namePart);
+                    newAccount.setParent(parentId);
+                    accountDao.create(newAccount);
+                    parentId = newAccount.getId();
+                }
                 new AccountTreeHelper(ConnectionSourceProvider.get()).refreshTree();
                 this.getStage().close();
             }

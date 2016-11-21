@@ -119,4 +119,29 @@ public class Account
             throw new AssertionError("contains invalid characters");
     }
 
+    public static final Pattern VALID_NAMECRUMB_REGEX = Pattern.compile("^[A-Za-z0-9_\\.]*$");
+    public static void AssertValidAccountTree(String name)
+    {
+        if (!VALID_NAMECRUMB_REGEX.matcher(name).matches())
+            throw new AssertionError("contains invalid characters");
+
+        String[] parts = name.split("\\.", -1);
+
+        if (parts.length == 1) AssertValidAccountName(name);
+
+        int i = 1;
+        for (String s : parts)
+        {
+            try
+            {
+                AssertValidAccountName(s);
+            }
+            catch (AssertionError e)
+            {
+                throw new AssertionError(String.format("part %d %s", i, e.getMessage()));
+            }
+            i++;
+        }
+    }
+
 }
