@@ -13,6 +13,7 @@ import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 import org.coinage.core.models.SubTransaction;
 
+import java.text.DecimalFormat;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -22,11 +23,14 @@ import java.util.function.Function;
 public class TransactionTable extends TableView<TransactionTableRow>
 {
     private final ObservableList<TransactionTableRow> contents;
+    private DecimalFormat displayFormat = new DecimalFormat("#,##0.00");
 
     public TransactionTable()
     {
         this.contents = FXCollections.observableArrayList();
         this.setItems(this.contents);
+        displayFormat.setNegativePrefix("R -");
+        displayFormat.setPositivePrefix("R  ");
 
         TableColumn<TransactionTableRow, String> datetimeCol = new TableColumn<>("Date Time");
         TableColumn<TransactionTableRow, String> commentCol = new TableColumn<>("Comment");
@@ -94,7 +98,7 @@ public class TransactionTable extends TableView<TransactionTableRow>
                                     VBox v = new VBox();
                                     for (SubTransaction st : item.getSubTransactions())
                                     {
-                                        v.getChildren().add(new Label(st.getValue().toString()));
+                                        v.getChildren().add(new Label(displayFormat.format(st.getValue())));
                                     }
                                     this.setGraphic(v);
                                 }
@@ -108,7 +112,7 @@ public class TransactionTable extends TableView<TransactionTableRow>
                 });
 
 
-        balanceCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getBalance().toString()));
+        balanceCol.setCellValueFactory(param -> new SimpleStringProperty(displayFormat.format(param.getValue().getBalance())));
 
     }
 }

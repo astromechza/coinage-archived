@@ -106,7 +106,10 @@ public class SubTransaction
                 "id=" + id +
                 ", transaction=" + transaction.getId() +
                 ", account=(" + account.getId() + ")" + account.getName() +
-                ", source_account=(" + sourceAccount.getId() + ")" + sourceAccount.getName() +
+                (sourceAccount == null ?
+                    ", source_account=null" :
+                    ", source_account=(" + sourceAccount.getId() + ")" + sourceAccount.getName()
+                ) +
                 ", value=" + value +
                 '}';
     }

@@ -1,6 +1,7 @@
 package org.coinage.gui.components.table;
 
 import org.coinage.core.models.SubTransaction;
+import org.coinage.core.models.Transaction;
 import org.joda.time.DateTime;
 
 import java.math.BigDecimal;
@@ -20,12 +21,29 @@ public class TransactionTableRow
 
     public TransactionTableRow(List<SubTransaction> subTransactions, BigDecimal balance)
     {
+        Transaction transaction = null;
+        for (SubTransaction st : subTransactions)
+        {
+            if (st.getTransaction() != null)
+            {
+                transaction = st.getTransaction();
+                break;
+            }
+        }
+        if (transaction != null)
+        {
+            this.transactionId = transaction.getId();
+            this.dateTime = transaction.getDatetime();
+            this.comment = transaction.getComment();
+        }
+        else
+        {
+            this.transactionId = -1;
+            this.dateTime = null;
+            this.comment = "no transaction specified";
+        }
         this.subTransactions = subTransactions;
-        this.transactionId = subTransactions.get(0).getId();
-        this.dateTime = subTransactions.get(0).getTransaction().getDatetime();
-        this.comment = subTransactions.get(0).getTransaction().getComment();
         this.balance = balance;
-
     }
 
     public List<SubTransaction> getSubTransactions()

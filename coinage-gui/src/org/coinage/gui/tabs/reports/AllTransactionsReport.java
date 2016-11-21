@@ -19,6 +19,7 @@ import org.coinage.gui.components.table.TransactionTableRow;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -110,8 +111,9 @@ public class AllTransactionsReport extends Tab
                                     {
                                         Account sourceAccount = group.get(0).getSourceAccount();
                                         sourceAccount.setName(nameMap.get(sourceAccount.getId()));
-                                        group.add(new SubTransaction(null, sourceAccount, groupBalance.negate()));
+                                        group.add(new SubTransaction(group.get(0).getTransaction(), sourceAccount, groupBalance.negate()));
                                     }
+                                    group.sort((st1, st2) -> st1.getValue().compareTo(st2.getValue()));
                                     balance = balance.add(groupBalance);
                                     rows.add(new TransactionTableRow(group, balance));
                                 }
@@ -140,8 +142,9 @@ public class AllTransactionsReport extends Tab
                             {
                                 Account sourceAccount = group.get(0).getSourceAccount();
                                 sourceAccount.setName(nameMap.get(sourceAccount.getId()));
-                                group.add(new SubTransaction(null, sourceAccount, groupBalance.negate()));
+                                group.add(new SubTransaction(group.get(0).getTransaction(), sourceAccount, groupBalance.negate()));
                             }
+                            group.sort((st1, st2) -> st1.getValue().compareTo(st2.getValue()));
                             balance = balance.add(groupBalance);
                             rows.add(new TransactionTableRow(group, balance));
                         }
