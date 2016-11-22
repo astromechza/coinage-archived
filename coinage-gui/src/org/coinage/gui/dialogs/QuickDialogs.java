@@ -54,10 +54,15 @@ public class QuickDialogs
 
     public static void exception(Throwable e)
     {
+        exception(e, "Exception occured");
+    }
+
+    public static void exception(Throwable e, String message, Object... args)
+    {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Exception thrown");
-        alert.setHeaderText(e.getClass().getName());
-        alert.setContentText(e.getMessage());
+        alert.setHeaderText(String.format(message, args));
+        alert.setContentText(e.getClass().getName() + ": " + e.getMessage());
 
         // Create stacktrace
         StringWriter sw = new StringWriter();

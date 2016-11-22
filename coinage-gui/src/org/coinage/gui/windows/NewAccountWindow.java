@@ -2,6 +2,7 @@ package org.coinage.gui.windows;
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.stmt.QueryBuilder;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
@@ -13,7 +14,6 @@ import javafx.scene.layout.HBox;
 import org.coinage.core.Resources;
 import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.Account;
-import org.coinage.core.models.AccountClosure;
 import org.coinage.gui.ConnectionSourceProvider;
 import org.coinage.gui.components.HExpander;
 import org.coinage.gui.dialogs.QuickDialogs;
@@ -143,31 +143,99 @@ public class NewAccountWindow extends BaseWindow
             }
         });
         this.createBtn.setOnAction(e -> {
-            String nameContent = this.nameBox.getText();
-            Account.AssertValidAccountTree(nameContent);
-            AccountComboItem selected = this.parentBox.getSelectionModel().getSelectedItem();
-            Long parentId = selected.getId();
+
+            // get dao
+            Dao<Account, Long> accountDao;
             try
             {
-                Dao<Account, Long> accountDao =  DaoManager.createDao(ConnectionSourceProvider.get(), Account.class);
-                for (String namePart : nameContent.split("\\."))
-                {
-                    Account newAccount = new Account(namePart);
-                    newAccount.setParent(parentId);
-                    accountDao.create(newAccount);
-                    parentId = newAccount.getId();
-                }
-                new AccountTreeHelper(ConnectionSourceProvider.get()).refreshTree();
-                this.getStage().close();
+                accountDao =  DaoManager.createDao(ConnectionSourceProvider.get(), Account.class);
             }
-            catch (AssertionError er1)
+            catch (SQLException sqle)
             {
-                QuickDialogs.error("Account name is invalid! The name %s", er1.getMessage());
+                QuickDialogs.exception(sqle);
+                return;
+            }
+
+            String nameContent = this.nameBox.getText();
+
+            // validate name
+            try
+            {
+                Account.AssertValidAccountTree(nameContent);
+            }
+            catch (AssertionError ase)
+            {
+                QuickDialogs.error("Account tree %s is not valid: %s", nameContent, ase);
+                return;
+            }
+
+            AccountComboItem selected = this.parentBox.getSelectionModel().getSelectedItem();
+            Long parentId = selected.getId();
+            String currentName = "";
+
+            // loop through name things
+            for  (String namePart : nameContent.split("\\."))
+            {
+                currentName = namePart;
+                Account newAccount = new Account(currentName);
+                newAccount.setParent(parentId);
+
+                // attempt to create
+                try
+                {
+                    accountDao.create(newAccount);
+                }
+                catch (SQLException e1)
+                {
+                    SQLException cause = (SQLException) e1.getCause();
+                    if (cause.toString().contains("SQLITE_CONSTRAINT"))
+                    {
+                        // try to find parent account
+                        try
+                        {
+                            QueryBuilder<Account, Long> q = accountDao.queryBuilder();
+                            q.where().eq(Account.COLUMN_NAME, currentName);
+                            if (parentId == null)
+                                q.where().isNull(Account.COLUMN_PARENT);
+                            else
+                                q.where().eq(Account.COLUMN_PARENT, parentId);
+                            Account existing = q.queryForFirst();
+                            if (existing != null)
+                            {
+                                parentId = existing.getId();
+                            }
+                            else
+                            {
+                                QuickDialogs.error("Could not find conflict! whut!");
+                                return;
+                            }
+                        }
+                        catch (SQLException e2)
+                        {
+                            QuickDialogs.exception(e2, "Error occured while searching for conflict");
+                            return;
+                        }
+
+                    }
+                    else
+                    {
+                        QuickDialogs.exception(e1, "Unexpected error while creating account");
+                        return;
+                    }
+                }
+            }
+
+            try
+            {
+                new AccountTreeHelper(ConnectionSourceProvider.get()).refreshTree();
             }
             catch (SQLException er2)
             {
-                QuickDialogs.error("Failed to create new account! %s", er2.getMessage());
+                QuickDialogs.exception(er2, "Error occured while building account closures");
+                return;
             }
+
+            this.getStage().close();
         });
     }
 
