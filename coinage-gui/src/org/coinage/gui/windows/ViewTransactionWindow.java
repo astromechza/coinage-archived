@@ -17,6 +17,7 @@ import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.SubTransaction;
 import org.coinage.core.models.Transaction;
 import org.coinage.gui.ConnectionSourceProvider;
+import org.coinage.gui.components.AccountAutoCompleteComboBox;
 import org.coinage.gui.components.HExpander;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -38,6 +39,7 @@ public class ViewTransactionWindow extends BaseWindow
     private Label dateLabel;
     private Label positiveSubtransactionsLabel;
     private Label negativeSubtransactionsLabel;
+    private AccountAutoCompleteComboBox combo;
 
     {
         displayFormat.setPositivePrefix("R  ");
@@ -89,6 +91,8 @@ public class ViewTransactionWindow extends BaseWindow
                 }
             }
             commentBox.setText(transaction.getComment());
+            combo = new AccountAutoCompleteComboBox(nameMap);
+            this.positiveSubtransactions.getChildren().add(combo);
         }
         catch (SQLException e)
         {

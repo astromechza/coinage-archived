@@ -34,10 +34,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created At: 2016-11-19
@@ -114,7 +111,7 @@ public class NewTransactionWindow extends BaseWindow
             e.printStackTrace();
         }
 
-        sink.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
+        sink.sort(Comparator.comparing(AccountComboItem::getName));
         this.accountItems = new SimpleListProperty<>(FXCollections.observableArrayList(sink));
     }
 
