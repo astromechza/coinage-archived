@@ -2,7 +2,9 @@ package org.coinage.gui.components;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.Point2D;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Background;
 import org.coinage.core.models.Account;
@@ -31,6 +33,7 @@ public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteIte
             data.add(new AccountAutoCompleteItem(entry.getKey(), entry.getValue()));
             data.sort(Comparator.comparing(AccountAutoCompleteItem::getFullName));
         }
+        this.setTooltip(new Tooltip());
         this.setItems(FXCollections.observableArrayList(data));
         this.setPromptText("Type or select an account");
         this.setOnKeyPressed(t -> AccountAutoCompleteComboBox.this.hide());
@@ -80,10 +83,18 @@ public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteIte
             {
                 Account.AssertValidAccountTree(t);
                 this.getEditor().setStyle("");
+                this.getTooltip().hide();
             }
             catch (AssertionError e)
             {
                 this.getEditor().setStyle("-fx-background-color: red");
+                this.getTooltip().setText(String.format("Invalid: %s", e.getMessage()));
+
+                Point2D p = this.localToScene(0, this.getHeight());
+                if (this.getTooltip().isShowing()) this.getTooltip().hide();
+                this.getTooltip().show(this, p.getX()
+                    + this.getScene().getX() + this.getScene().getWindow().getX(), p.getY()
+                    + this.getScene().getY() + this.getScene().getWindow().getY());
             }
 
             if (!moveCaretToPos) caretPos = -1;
