@@ -16,14 +16,14 @@ public class Account
     private Long id;
 
     public static final String COLUMN_PARENT = "parent";
-    @DatabaseField(columnName = COLUMN_PARENT, foreign = true, unique = true, uniqueCombo = true)
+    @DatabaseField(columnName = COLUMN_PARENT, foreign = true, uniqueCombo = true)
     private Account parent;
 
     public static final String COLUMN_NAME = "name";
-    @DatabaseField(columnName = COLUMN_NAME, unique = true, uniqueCombo = true)
+    @DatabaseField(columnName = COLUMN_NAME, uniqueCombo = true)
     private String name;
 
-    public static final Pattern NAME_PATTERN = Pattern.compile("[A-Z0-9][a-z0-9_\\-\\.]+");
+    public static final Pattern NAME_PATTERN = Pattern.compile("[A-Z0-9][a-z0-9_\\-.]+");
 
     public Account() {}
 
@@ -96,7 +96,7 @@ public class Account
         if (id != null ? !id.equals(other.id) : other.id != null) return false;
         // check parent id
         if (parent == null ^ other.parent == null) return false;
-        if (parent != null && parent.getId() != other.parent.getId()) return false;
+        if (parent != null && !parent.getId().equals(other.parent.getId())) return false;
         return name != null ? name.equals(other.name) : other.name == null;
     }
 
@@ -119,7 +119,7 @@ public class Account
             throw new AssertionError("contains invalid characters");
     }
 
-    public static final Pattern VALID_NAMECRUMB_REGEX = Pattern.compile("^[A-Za-z0-9_\\.]*$");
+    public static final Pattern VALID_NAMECRUMB_REGEX = Pattern.compile("^[A-Za-z0-9_.]*$");
     public static void AssertValidAccountTree(String name)
     {
         if (!VALID_NAMECRUMB_REGEX.matcher(name).matches())

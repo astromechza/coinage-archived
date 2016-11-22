@@ -20,6 +20,7 @@ import org.coinage.gui.dialogs.QuickDialogs;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -74,7 +75,7 @@ public class NewAccountWindow extends BaseWindow
             {
                 this.fillContent(node, "", this.parentBox);
             }
-            this.parentBox.getItems().sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
+            this.parentBox.getItems().sort(Comparator.comparing(AccountComboItem::getName));
             this.parentBox.getItems().add(0, new AccountComboItem("<No Parent>", null));
         }
         catch (SQLException e)
@@ -171,13 +172,11 @@ public class NewAccountWindow extends BaseWindow
 
             AccountComboItem selected = this.parentBox.getSelectionModel().getSelectedItem();
             Long parentId = selected.getId();
-            String currentName = "";
 
             // loop through name things
             for  (String namePart : nameContent.split("\\."))
             {
-                currentName = namePart;
-                Account newAccount = new Account(currentName);
+                Account newAccount = new Account(namePart);
                 newAccount.setParent(parentId);
 
                 // attempt to create
@@ -194,7 +193,7 @@ public class NewAccountWindow extends BaseWindow
                         try
                         {
                             QueryBuilder<Account, Long> q = accountDao.queryBuilder();
-                            q.where().eq(Account.COLUMN_NAME, currentName);
+                            q.where().eq(Account.COLUMN_NAME, namePart);
                             if (parentId == null)
                                 q.where().isNull(Account.COLUMN_PARENT);
                             else
@@ -215,7 +214,6 @@ public class NewAccountWindow extends BaseWindow
                             QuickDialogs.exception(e2, "Error occured while searching for conflict");
                             return;
                         }
-
                     }
                     else
                     {

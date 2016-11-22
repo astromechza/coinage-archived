@@ -8,7 +8,6 @@ import org.coinage.core.models.Account;
 import org.coinage.core.models.AccountClosure;
 
 import java.sql.SQLException;
-import java.util.List;
 
 /**
  * Created At: 2016-11-09

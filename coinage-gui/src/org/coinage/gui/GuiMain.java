@@ -10,6 +10,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.coinage.core.Version;
+import org.coinage.core.fixtures.FakeFixture;
 import org.coinage.core.models.Account;
 import org.coinage.core.models.AccountClosure;
 import org.coinage.core.models.SubTransaction;
@@ -70,6 +71,9 @@ public class GuiMain
             TableUtils.createTableIfNotExists(ConnectionSourceProvider.get(), AccountClosure.class);
             TableUtils.createTableIfNotExists(ConnectionSourceProvider.get(), Transaction.class);
             TableUtils.createTableIfNotExists(ConnectionSourceProvider.get(), SubTransaction.class);
+
+            FakeFixture.install(ConnectionSourceProvider.get());
+
             MainWindow window = new MainWindow(primaryStage);
             window.getStage().show();
             // TODO open the sqlite database given by getParameters().getRaw().get(0);

@@ -9,6 +9,7 @@ import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.Account;
 
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -44,7 +45,7 @@ public class AccountsTreeTableView extends TreeTableView<AccountsTreeData>
             refillSubTree(node, root);
             this.getRoot().getChildren().add(node);
         }
-        this.getRoot().getChildren().sort((o1, o2) -> o1.getValue().getName().compareTo(o2.getValue().getName()));
+        this.getRoot().getChildren().sort(Comparator.comparing(o -> o.getValue().getName()));
     }
 
     private void refillSubTree(TreeItem<AccountsTreeData> parent, AccountTreeHelper.AccountTreeNode parentNode)
@@ -56,7 +57,7 @@ public class AccountsTreeTableView extends TreeTableView<AccountsTreeData>
             parent.getChildren().add(childTI);
         }
 
-        parent.getChildren().sort((o1, o2) -> o1.getValue().getName().compareTo(o2.getValue().getName()));
+        parent.getChildren().sort(Comparator.comparing(o -> o.getValue().getName()));
     }
 
 }

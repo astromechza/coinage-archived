@@ -1,9 +1,6 @@
 package org.coinage.gui.components.treeview;
 
-import javafx.beans.property.SimpleObjectProperty;
 import org.coinage.core.models.Account;
-
-import java.math.BigDecimal;
 
 /**
  * Created At: 2016-11-13

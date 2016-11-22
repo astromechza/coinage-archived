@@ -1,29 +1,19 @@
 package org.coinage.gui.components.table;
 
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.NumberExpression;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ObservableStringValue;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
-import javafx.scene.text.TextBoundsType;
 import javafx.util.Callback;
 import org.coinage.core.models.SubTransaction;
-import org.coinage.core.models.Transaction;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimePrinter;
 
 import java.text.DecimalFormat;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Created At: 2016-11-17

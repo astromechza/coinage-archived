@@ -1,8 +1,6 @@
 package org.coinage.gui.windows;
 
-import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
-import com.j256.ormlite.support.ConnectionSource;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -11,23 +9,15 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-import org.coinage.core.generators.AccountGenerator;
-import org.coinage.core.generators.TransactionGenerator;
-import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.Account;
-import org.coinage.core.models.SubTransaction;
-import org.coinage.core.models.Transaction;
 import org.coinage.gui.ConnectionSourceProvider;
 import org.coinage.gui.components.treeview.AccountsTreeData;
 import org.coinage.gui.components.treeview.AccountsTreeTableView;
 import org.coinage.gui.dialogs.QuickDialogs;
 import org.coinage.gui.tabs.reports.AllTransactionsReport;
-import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created At: 2016-11-13
@@ -45,6 +35,15 @@ public class MainWindow extends BaseWindow
     {
         super(container);
         this.initialise();
+
+        try
+        {
+            this.accountsTree.refreshAll(ConnectionSourceProvider.get());
+        }
+        catch (SQLException e)
+        {
+            QuickDialogs.exception(e, "Failure when refreshing account tree");
+        }
     }
 
     @Override

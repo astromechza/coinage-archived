@@ -359,7 +359,7 @@ public class NewTransactionWindow extends BaseWindow
     private void checkPopDisabled()
     {
         boolean popDisabled = this.toAccountRows.getChildren().size() <= 1;
-        this.toAccountRows.getChildren().stream().forEach(
+        this.toAccountRows.getChildren().forEach(
                 node -> ((HBox) node).getChildren().get(2).setDisable(popDisabled));
     }
 }

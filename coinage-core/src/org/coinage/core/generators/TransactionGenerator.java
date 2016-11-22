@@ -3,7 +3,6 @@ package org.coinage.core.generators;
 import org.coinage.core.models.Account;
 import org.coinage.core.models.SubTransaction;
 import org.coinage.core.models.Transaction;
-import org.joda.time.DateTime;
 
 import java.math.BigDecimal;
 import java.util.List;

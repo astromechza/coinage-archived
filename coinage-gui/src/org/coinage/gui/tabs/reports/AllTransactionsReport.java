@@ -16,14 +16,13 @@ import org.coinage.core.models.SubTransaction;
 import org.coinage.gui.ConnectionSourceProvider;
 import org.coinage.gui.components.table.TransactionTable;
 import org.coinage.gui.components.table.TransactionTableRow;
+import org.coinage.gui.dialogs.QuickDialogs;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Created At: 2016-11-17
@@ -113,7 +112,7 @@ public class AllTransactionsReport extends Tab
                                         sourceAccount.setName(nameMap.get(sourceAccount.getId()));
                                         group.add(new SubTransaction(group.get(0).getTransaction(), sourceAccount, groupBalance.negate()));
                                     }
-                                    group.sort((st1, st2) -> st1.getValue().compareTo(st2.getValue()));
+                                    group.sort(Comparator.comparing(SubTransaction::getValue));
                                     balance = balance.add(groupBalance);
                                     rows.add(new TransactionTableRow(group, balance));
                                 }
@@ -144,7 +143,7 @@ public class AllTransactionsReport extends Tab
                                 sourceAccount.setName(nameMap.get(sourceAccount.getId()));
                                 group.add(new SubTransaction(group.get(0).getTransaction(), sourceAccount, groupBalance.negate()));
                             }
-                            group.sort((st1, st2) -> st1.getValue().compareTo(st2.getValue()));
+                            group.sort(Comparator.comparing(SubTransaction::getValue));
                             balance = balance.add(groupBalance);
                             rows.add(new TransactionTableRow(group, balance));
                         }
@@ -152,6 +151,7 @@ public class AllTransactionsReport extends Tab
 
                     Platform.runLater(() -> {
                         AllTransactionsReport.this.transactionTable.focusPrefix().setValue(searchAccountName);
+                        AllTransactionsReport.this.setText(searchAccountName);
                         AllTransactionsReport.this.reportLabel.setText(tabName);
                         AllTransactionsReport.this.transactionTable.getItems().addAll(rows);
                         AllTransactionsReport.this.rootStack.getChildren()
@@ -160,7 +160,7 @@ public class AllTransactionsReport extends Tab
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    QuickDialogs.exception(e, "Unexpected exception while loading transaction report");
                 }
                 return null;
             }

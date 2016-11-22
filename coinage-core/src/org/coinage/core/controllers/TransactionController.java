@@ -9,7 +9,6 @@ import org.coinage.core.models.SubTransaction;
 import org.coinage.core.models.Transaction;
 
 import java.sql.SQLException;
-import java.util.List;
 
 /**
  * Created At: 2016-11-13
