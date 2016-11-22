@@ -4,6 +4,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.ComboBox;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.Background;
+import org.coinage.core.models.Account;
 import org.coinage.gui.AccountAutoCompleteItem;
 
 import java.util.ArrayList;
@@ -34,25 +36,25 @@ public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteIte
         this.setOnKeyPressed(t -> AccountAutoCompleteComboBox.this.hide());
         this.setOnKeyReleased(event -> {
 
-            if(event.getCode() == KeyCode.UP)
+            if (event.getCode() == KeyCode.UP)
             {
                 caretPos = -1;
                 moveCaret(this.getEditor().getText().length());
                 return;
             }
-            else if(event.getCode() == KeyCode.DOWN)
+            else if (event.getCode() == KeyCode.DOWN)
             {
-                if(!this.isShowing()) this.show();
+                if (!this.isShowing()) this.show();
                 caretPos = -1;
                 moveCaret(this.getEditor().getText().length());
                 return;
             }
-            else if(event.getCode() == KeyCode.BACK_SPACE)
+            else if (event.getCode() == KeyCode.BACK_SPACE)
             {
                 moveCaretToPos = true;
                 caretPos = this.getEditor().getCaretPosition();
             }
-            else if(event.getCode() == KeyCode.DELETE)
+            else if (event.getCode() == KeyCode.DELETE)
             {
                 moveCaretToPos = true;
                 caretPos = this.getEditor().getCaretPosition();
@@ -73,10 +75,20 @@ public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteIte
 
             String t = this.getEditor().getText();
             this.setItems(list);
-            this.getEditor().setText(t);
-            if(!moveCaretToPos) caretPos = -1;
+
+            try
+            {
+                Account.AssertValidAccountTree(t);
+                this.getEditor().setStyle("");
+            }
+            catch (AssertionError e)
+            {
+                this.getEditor().setStyle("-fx-background-color: red");
+            }
+
+            if (!moveCaretToPos) caretPos = -1;
             moveCaret(t.length());
-            if(!list.isEmpty()) this.show();
+            if (!list.isEmpty()) this.show();
         });
     }
 
