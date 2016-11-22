@@ -4,15 +4,20 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.util.Callback;
 import org.coinage.core.models.SubTransaction;
+import org.coinage.gui.windows.ViewTransactionWindow;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.io.IOException;
 import java.text.DecimalFormat;
 
 /**
@@ -54,6 +59,35 @@ public class TransactionTable extends TableView<TransactionTableRow>
         );
 
         this.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        this.setRowFactory(new Callback<TableView<TransactionTableRow>, TableRow<TransactionTableRow>>() {
+            @Override
+            public TableRow<TransactionTableRow> call(TableView<TransactionTableRow> view)
+            {
+                TableRow<TransactionTableRow> row = new TableRow<TransactionTableRow>(){
+                    @Override
+                    protected void updateItem(TransactionTableRow item, boolean empty)
+                    {
+                        super.updateItem(item, empty);
+                        this.setOnMouseClicked(event -> {
+                             if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2)
+                             {
+                                 try
+                                 {
+                                     new ViewTransactionWindow(item.getTransactionId()).getStage().showAndWait();
+                                 }
+                                 catch (IOException e)
+                                 {
+                                     e.printStackTrace();
+                                 }
+                             }
+                        });
+                    }
+                };
+
+                return row;
+            }
+        });
 
         datetimeCol.setCellFactory(param -> {
             TableCell<TransactionTableRow, String> cell = new TableCell<>();

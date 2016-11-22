@@ -132,13 +132,10 @@ public class AccountTreeHelper
     {
         try(LogTimer ignored = new LogTimer(LOG, "Rebuilding account closures"))
         {
-            // fetch all accounts
-            List<AccountTreeNode> accountTree = buildAccountTree(accdao.queryForAll());
-
             // now build all the things
             List<AccountClosure> closures = new ArrayList<>();
             Stack<Account> activeStack = new Stack<>();
-            for (AccountTreeNode n : accountTree)
+            for (AccountTreeNode n : this.tree())
             {
                 // for each root item, do the thing!
                 buildClosureList(activeStack, n, closures);
@@ -150,6 +147,16 @@ public class AccountTreeHelper
             LOG.debug("Writing {} Account closures", closures.size());
             clsdao.create(closures);
         }
+    }
+
+    public Map<Long, String> nameMap() throws SQLException
+    {
+        return buildNameMap(tree());
+    }
+
+    public List<AccountTreeNode> tree() throws SQLException
+    {
+        return buildAccountTree(accdao.queryForAll());
     }
 
     public List<Account> selfAndAncestors(Account account) throws SQLException
