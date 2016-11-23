@@ -3,17 +3,11 @@ package org.coinage.gui.components;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Point2D;
-import javafx.scene.Cursor;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import org.coinage.core.models.Account;
-import org.coinage.gui.AccountAutoCompleteItem;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created At: 2016-11-23
@@ -22,17 +16,16 @@ public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteIte
 {
     private List<AccountAutoCompleteItem> data;
 
+    public AccountAutoCompleteComboBox()
+    {
+        this(new HashMap<>());
+    }
+
     public AccountAutoCompleteComboBox(Map<Long, String> nameMap)
     {
+        this.setContent(nameMap);
         this.setEditable(true);
-        data = new ArrayList<>();
-        for (Map.Entry<Long, String> entry : nameMap.entrySet())
-        {
-            data.add(new AccountAutoCompleteItem(entry.getKey(), entry.getValue()));
-            data.sort(Comparator.comparing(AccountAutoCompleteItem::getFullName));
-        }
         this.setTooltip(new Tooltip("Select an account name"));
-        this.setCursor(Cursor.HAND);
         this.getTooltip().setAutoHide(true);
         this.getTooltip().setHideOnEscape(true);
         this.setItems(FXCollections.observableArrayList(data));
@@ -59,22 +52,31 @@ public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteIte
             if (! list.isEmpty()) this.show();
             if (! newText.isEmpty())
             {
+                boolean showTooltip = false;
                 try
                 {
                     Account.AssertValidAccountTree(newText);
-                    this.getEditor().setStyle("");
-                    this.getTooltip().hide();
 
                     if (data.stream().noneMatch(i -> i.getFullName().equals(newText)))
                     {
                         this.getEditor().setStyle("-fx-background-color: #eeeeff");
+                        this.getTooltip().setText("Will be created!");
+                        showTooltip = true;
+                    }
+                    else
+                    {
+                        this.getEditor().setStyle("");
                     }
                 }
                 catch (AssertionError e)
                 {
                     this.getEditor().setStyle("-fx-background-color: red");
                     this.getTooltip().setText(String.format("Invalid: %s", e.getMessage()));
+                    showTooltip = true;
+                }
 
+                if (showTooltip)
+                {
                     if (!this.getTooltip().isShowing())
                     {
                         Point2D p = this.localToScene(this.getWidth(), this.getHeight());
@@ -84,6 +86,16 @@ public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteIte
                                 p.getY() + this.getScene().getY() + this.getScene().getWindow().getY());
                     }
                 }
+                else
+                {
+                    this.getTooltip().hide();
+                }
+
+            }
+            else
+            {
+                this.getTooltip().hide();
+                this.getEditor().setStyle("");
             }
         });
 
@@ -91,6 +103,24 @@ public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteIte
             AccountAutoCompleteComboBox.this.getEditor().positionCaret(AccountAutoCompleteComboBox.this.getEditor().getText().length());
             this.getEditor().setStyle("");
         });
+
+        this.focusedProperty().addListener((observable, oldValue, newValue) -> {
+            if (! newValue) AccountAutoCompleteComboBox.this.getTooltip().hide();
+        });
+    }
+
+    public void setContent(Map<Long, String> nameMap)
+    {
+        data = new ArrayList<>();
+        for (Map.Entry<Long, String> entry : nameMap.entrySet())
+        {
+            data.add(new AccountAutoCompleteItem(entry.getKey(), entry.getValue()));
+        }
+        data.sort(Comparator.comparing(AccountAutoCompleteItem::getFullName));
+
+        ObservableList<AccountAutoCompleteItem> list = FXCollections.observableArrayList();
+        data.forEach(list::add);
+        this.setItems(list);
     }
 
     public Long getSelectedAccount()

@@ -1,4 +1,4 @@
-package org.coinage.gui;
+package org.coinage.gui.components;
 
 /**
  * Created At: 2016-11-23

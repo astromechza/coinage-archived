@@ -19,6 +19,7 @@ import org.coinage.core.models.Account;
 import org.coinage.core.models.SubTransaction;
 import org.coinage.core.models.Transaction;
 import org.coinage.gui.ConnectionSourceProvider;
+import org.coinage.gui.components.AccountAutoCompleteComboBox;
 import org.coinage.gui.components.CurrencyField;
 import org.coinage.gui.components.HExpander;
 import org.coinage.gui.components.TimeField;
@@ -49,6 +50,7 @@ public class NewTransactionWindow extends BaseWindow
     private Label commentLabel;
     private DatePicker dateField;
     private TimeField timeField;
+    private Map<Long, String> nameMap;
 
     private static class AccountComboItem
     {
@@ -79,7 +81,7 @@ public class NewTransactionWindow extends BaseWindow
     }
 
     private ObservableList<AccountComboItem> accountItems;
-    private ComboBox<AccountComboItem> fromAccountBox;
+    private AccountAutoCompleteComboBox fromAccountBox;
     private Button newToAccountBtn;
     private VBox toAccountRows;
     private Label totalLabel;
@@ -89,50 +91,27 @@ public class NewTransactionWindow extends BaseWindow
     {
         this.initialise();
         this.fillAccountsList();
-        this.fromAccountBox.setItems(this.accountItems);
 
         this.addNewAccountRow();
     }
 
     private void fillAccountsList()
     {
-        List<AccountComboItem> sink = new ArrayList<>();
         try
         {
-            Dao<Account, Long> accountDao = DaoManager.createDao(ConnectionSourceProvider.get(), Account.class);
-            List<AccountTreeHelper.AccountTreeNode> accounts = AccountTreeHelper.buildAccountTree(accountDao.queryForAll());
-            for (AccountTreeHelper.AccountTreeNode node : accounts)
-            {
-                this.fillAccountsList(node, "", sink);
-            }
+            nameMap = new AccountTreeHelper(ConnectionSourceProvider.get()).nameMap();
+            this.fromAccountBox.setContent(nameMap);
         }
         catch (SQLException e)
         {
-            e.printStackTrace();
-        }
-
-        sink.sort(Comparator.comparing(AccountComboItem::getName));
-        this.accountItems = new SimpleListProperty<>(FXCollections.observableArrayList(sink));
-    }
-
-    private void fillAccountsList(AccountTreeHelper.AccountTreeNode node, String prefix, List<AccountComboItem> sink)
-    {
-        String name = prefix + node.value.getName();
-
-        // do self
-        sink.add(new AccountComboItem(name, node.value.getId()));
-
-        // do children
-        for (AccountTreeHelper.AccountTreeNode child : node.children)
-        {
-            this.fillAccountsList(child, name + ".", sink);
+            QuickDialogs.exception(e, "error while fetching name map for new transactions");
         }
     }
 
     @Override
     public void initControls()
     {
-        this.fromAccountBox = new ComboBox<>();
+        this.fromAccountBox = new AccountAutoCompleteComboBox();
         this.toAccountRows = new VBox(10);
         this.newToAccountBtn = new Button("+");
         this.totalLabel = new Label("R 0.00");
@@ -220,7 +199,7 @@ public class NewTransactionWindow extends BaseWindow
             for (Node n : toAccountRows.getChildren())
             {
                 HBox hb = (HBox)n;
-                ComboBox<AccountComboItem> cb = (ComboBox<AccountComboItem>)hb.getChildren().get(0);
+                AccountAutoCompleteComboBox cb = (AccountAutoCompleteComboBox)hb.getChildren().get(0);
                 CurrencyField cf = (CurrencyField)hb.getChildren().get(1);
                 if (cf.getDecimal() == null || cf.getDecimal().equals(BigDecimal.ZERO))
                 {
@@ -237,7 +216,7 @@ public class NewTransactionWindow extends BaseWindow
                     QuickDialogs.error("One of your account select inputs is equal to the from account!");
                     return;
                 }
-                Long l = cb.getSelectionModel().getSelectedItem().getId();
+                Long l = cb.getSelectionModel().getSelectedItem().getAccountId();
                 if (mentionedAccounts.contains(l))
                 {
                     QuickDialogs.error("You've selected the same account more than once, please combine those!");
@@ -273,16 +252,16 @@ public class NewTransactionWindow extends BaseWindow
                 transaction.setSubTransactions(transactionDao.getEmptyForeignCollection("subtransactions"));
                 transactionDao.create(transaction);
 
-                Account fromA = new Account(fromAccountBox.selectionModelProperty().get().getSelectedItem().getId());
+                Account fromA = new Account(fromAccountBox.selectionModelProperty().get().getSelectedItem().getAccountId());
                 BigDecimal inversion = BigDecimal.ZERO;
                 List<SubTransaction> subtransactions = new ArrayList<>();
                 for (Node n : toAccountRows.getChildren())
                 {
                     HBox hb = (HBox)n;
-                    ComboBox<AccountComboItem> cb = (ComboBox<AccountComboItem>)hb.getChildren().get(0);
+                    AccountAutoCompleteComboBox cb = (AccountAutoCompleteComboBox)hb.getChildren().get(0);
                     CurrencyField cf = (CurrencyField)hb.getChildren().get(1);
 
-                    Account toA = new Account(cb.selectionModelProperty().get().getSelectedItem().getId());
+                    Account toA = new Account(cb.selectionModelProperty().get().getSelectedItem().getAccountId());
                     subtransactions.add(new SubTransaction(transaction, toA, fromA, cf.getDecimal()));
                     inversion = inversion.add(cf.getDecimal().negate());
                 }
@@ -320,8 +299,8 @@ public class NewTransactionWindow extends BaseWindow
     {
         Button pop = new Button("X");
         CurrencyField currfield = new CurrencyField('R');
-        ComboBox<AccountComboItem> accountSelector = new ComboBox<>();
-        accountSelector.setItems(this.accountItems);
+        AccountAutoCompleteComboBox accountSelector = new AccountAutoCompleteComboBox();
+        accountSelector.setContent(nameMap);
         accountSelector.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(accountSelector, Priority.ALWAYS);
         HBox row = new HBox(10, accountSelector, currfield, pop);

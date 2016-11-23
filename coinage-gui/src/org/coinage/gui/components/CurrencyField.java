@@ -17,11 +17,12 @@ public class CurrencyField extends TextField
 {
     private final Pattern currencyPattern = Pattern.compile("(?:(?:[1-9]\\d*)|0)(?:\\.\\d*)?");
     public final SimpleObjectProperty<BigDecimal> valueProperty;
+
     public CurrencyField(Character currencySymbol)
     {
         super();
         this.valueProperty = new SimpleObjectProperty<>(null);
-
+        this.setPromptText("0.00");
         Label childLabel = new Label("" + currencySymbol);
         childLabel.setMaxWidth(Double.MAX_VALUE);
         childLabel.setStyle("-fx-padding: 5 5 5 -15");
@@ -36,8 +37,7 @@ public class CurrencyField extends TextField
             if (sc.length() > 0)
             {
                 char c = sc.charAt(0);
-                if (Character.isDigit(c)) return;
-                if (c == '.') return;
+                if (Character.isDigit(c) || c == '.') return;
                 ke.consume();
             }
         });

@@ -39,7 +39,6 @@ public class ViewTransactionWindow extends BaseWindow
     private Label dateLabel;
     private Label positiveSubtransactionsLabel;
     private Label negativeSubtransactionsLabel;
-    private AccountAutoCompleteComboBox combo;
 
     {
         displayFormat.setPositivePrefix("R  ");
@@ -91,8 +90,7 @@ public class ViewTransactionWindow extends BaseWindow
                 }
             }
             commentBox.setText(transaction.getComment());
-            combo = new AccountAutoCompleteComboBox(nameMap);
-            this.positiveSubtransactions.getChildren().add(combo);
+            ((VBox) this.getRootLayout()).getChildren().add(new AccountAutoCompleteComboBox(nameMap));
         }
         catch (SQLException e)
         {
