@@ -30,8 +30,8 @@ public class AccountAutoCompleteItem
         return this.fullName;
     }
 
-    public boolean startsWithPrefix(String s)
+    public boolean containsFilter(String s)
     {
-        return this.fullName.toLowerCase().startsWith(s.toLowerCase());
+        return this.fullName.toLowerCase().contains(s.toLowerCase());
     }
 }

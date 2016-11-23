@@ -3,10 +3,10 @@ package org.coinage.gui.components;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Point2D;
+import javafx.scene.Cursor;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.Background;
 import org.coinage.core.models.Account;
 import org.coinage.gui.AccountAutoCompleteItem;
 
@@ -21,8 +21,6 @@ import java.util.Map;
 public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteItem>
 {
     private List<AccountAutoCompleteItem> data;
-    private boolean moveCaretToPos = false;
-    private int caretPos;
 
     public AccountAutoCompleteComboBox(Map<Long, String> nameMap)
     {
@@ -33,83 +31,66 @@ public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteIte
             data.add(new AccountAutoCompleteItem(entry.getKey(), entry.getValue()));
             data.sort(Comparator.comparing(AccountAutoCompleteItem::getFullName));
         }
-        this.setTooltip(new Tooltip());
+        this.setTooltip(new Tooltip("Select an account name"));
+        this.setCursor(Cursor.HAND);
+        this.getTooltip().setAutoHide(true);
+        this.getTooltip().setHideOnEscape(true);
         this.setItems(FXCollections.observableArrayList(data));
         this.setPromptText("Type or select an account");
         this.setOnKeyPressed(t -> AccountAutoCompleteComboBox.this.hide());
         this.setOnKeyReleased(event -> {
 
-            if (event.getCode() == KeyCode.UP)
-            {
-                caretPos = -1;
-                moveCaret(this.getEditor().getText().length());
-                return;
-            }
-            else if (event.getCode() == KeyCode.DOWN)
-            {
-                if (!this.isShowing()) this.show();
-                caretPos = -1;
-                moveCaret(this.getEditor().getText().length());
-                return;
-            }
-            else if (event.getCode() == KeyCode.BACK_SPACE)
-            {
-                moveCaretToPos = true;
-                caretPos = this.getEditor().getCaretPosition();
-            }
-            else if (event.getCode() == KeyCode.DELETE)
-            {
-                moveCaretToPos = true;
-                caretPos = this.getEditor().getCaretPosition();
-            }
-
             if (event.getCode() == KeyCode.RIGHT || event.getCode() == KeyCode.LEFT
+                    || event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN
                     || event.isControlDown() || event.getCode() == KeyCode.HOME
                     || event.getCode() == KeyCode.END || event.getCode() == KeyCode.TAB) return;
 
+            final String newText = this.getEditor().getText();
+            this.getSelectionModel().clearSelection();
+            this.getEditor().setText(newText);
+            this.getEditor().positionCaret(newText.length());
+
             ObservableList<AccountAutoCompleteItem> list = FXCollections.observableArrayList();
-            for (AccountAutoCompleteItem d : data)
+            data.stream().filter(item -> item.containsFilter(newText)).forEach(list::add);
+
+            int sizeBefore = this.getItems().size();
+            if (sizeBefore != list.size()) this.hide();
+            this.setItems(list);
+            if (! list.isEmpty()) this.show();
+            if (! newText.isEmpty())
             {
-                if (d.startsWithPrefix(AccountAutoCompleteComboBox.this.getEditor().getText()))
+                try
                 {
-                    list.add(d);
+                    Account.AssertValidAccountTree(newText);
+                    this.getEditor().setStyle("");
+                    this.getTooltip().hide();
+
+                    if (data.stream().noneMatch(i -> i.getFullName().equals(newText)))
+                    {
+                        this.getEditor().setStyle("-fx-background-color: #eeeeff");
+                    }
+                }
+                catch (AssertionError e)
+                {
+                    this.getEditor().setStyle("-fx-background-color: red");
+                    this.getTooltip().setText(String.format("Invalid: %s", e.getMessage()));
+
+                    if (!this.getTooltip().isShowing())
+                    {
+                        Point2D p = this.localToScene(this.getWidth(), this.getHeight());
+                        this.getTooltip().show(
+                                this,
+                                p.getX() + this.getScene().getX() + this.getScene().getWindow().getX(),
+                                p.getY() + this.getScene().getY() + this.getScene().getWindow().getY());
+                    }
                 }
             }
-
-            String t = this.getEditor().getText();
-            this.setItems(list);
-
-            try
-            {
-                Account.AssertValidAccountTree(t);
-                this.getEditor().setStyle("");
-                this.getTooltip().hide();
-            }
-            catch (AssertionError e)
-            {
-                this.getEditor().setStyle("-fx-background-color: red");
-                this.getTooltip().setText(String.format("Invalid: %s", e.getMessage()));
-
-                Point2D p = this.localToScene(0, this.getHeight());
-                if (this.getTooltip().isShowing()) this.getTooltip().hide();
-                this.getTooltip().show(this, p.getX()
-                    + this.getScene().getX() + this.getScene().getWindow().getX(), p.getY()
-                    + this.getScene().getY() + this.getScene().getWindow().getY());
-            }
-
-            if (!moveCaretToPos) caretPos = -1;
-            moveCaret(t.length());
-            if (!list.isEmpty()) this.show();
         });
-    }
 
-    private void moveCaret(int textLength) {
-        if(caretPos == -1) {
-            this.getEditor().positionCaret(textLength);
-        } else {
-            this.getEditor().positionCaret(caretPos);
-        }
-        moveCaretToPos = false;
+        this.getSelectionModel().selectedIndexProperty().addListener((observable, oldValue, newValue) -> {
+            AccountAutoCompleteComboBox.this.getEditor().positionCaret(AccountAutoCompleteComboBox.this.getEditor().getText().length());
+            this.getEditor().setStyle("");
+        });
     }
 
     public Long getSelectedAccount()
