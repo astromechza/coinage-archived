@@ -8,6 +8,8 @@ import com.j256.ormlite.support.ConnectionSource;
 import org.coinage.core.LogTimer;
 import org.coinage.core.models.Account;
 import org.coinage.core.models.AccountClosure;
+import org.coinage.gui.ConnectionSourceProvider;
+import org.coinage.gui.dialogs.QuickDialogs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -263,4 +265,41 @@ public class AccountTreeHelper
             buildNameMap(child, name, output);
         }
     }
+
+    public Account createAccountAndParents(String fullName, boolean refreshClosures) throws SQLException
+    {
+        try(LogTimer ignored = new LogTimer(LOG, String.format("Create Account and parents '%s'", fullName)))
+        {
+            Account.AssertValidAccountTree(fullName);
+            Account newAccount = null;
+            Long parentId = null;
+
+            // try to find accounts
+            QueryBuilder<Account, Long> q = this.accdao.queryBuilder();
+            for (String namePart : fullName.split("\\."))
+            {
+                q.reset();
+                Where<Account, Long> w = q.where().eq(Account.COLUMN_NAME, namePart).and();
+                if (parentId == null)
+                    w.isNull(Account.COLUMN_PARENT);
+                else
+                    w.eq(Account.COLUMN_PARENT, parentId);
+                newAccount = q.queryForFirst();
+
+                if (newAccount == null)
+                {
+                    // attempt to create
+                    newAccount = new Account(namePart);
+                    newAccount.setParent(parentId);
+                    this.accdao.create(newAccount);
+                }
+                parentId = newAccount.getId();
+            }
+
+            if (refreshClosures) this.refreshTree();
+
+            return newAccount;
+        }
+    }
+
 }

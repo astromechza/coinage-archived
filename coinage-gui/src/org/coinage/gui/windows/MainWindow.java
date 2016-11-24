@@ -118,10 +118,15 @@ public class MainWindow extends BaseWindow
             try
             {
                 new NewTransactionWindow().getStage().showAndWait();
+                this.accountsTree.refreshAll(ConnectionSourceProvider.get());
             }
             catch (IOException e)
             {
                 QuickDialogs.exception(e);
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
             }
         });
 

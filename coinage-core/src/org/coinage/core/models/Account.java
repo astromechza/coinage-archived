@@ -16,11 +16,11 @@ public class Account
     private Long id;
 
     public static final String COLUMN_PARENT = "parent";
-    @DatabaseField(columnName = COLUMN_PARENT, foreign = true, uniqueCombo = true)
+    @DatabaseField(columnName = COLUMN_PARENT, foreign = true, uniqueIndexName = "unique_parent_and_name")
     private Account parent;
 
     public static final String COLUMN_NAME = "name";
-    @DatabaseField(columnName = COLUMN_NAME, uniqueCombo = true)
+    @DatabaseField(columnName = COLUMN_NAME, uniqueIndexName = "unique_parent_and_name")
     private String name;
 
     public static final Pattern NAME_PATTERN = Pattern.compile("[A-Z0-9][a-z0-9_\\-.]+");

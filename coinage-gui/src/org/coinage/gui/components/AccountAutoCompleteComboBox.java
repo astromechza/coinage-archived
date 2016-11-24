@@ -127,7 +127,8 @@ public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteIte
     {
         if (this.getSelectionModel().isEmpty())
         {
-            return null;
+            Optional<AccountAutoCompleteItem> o = data.stream().filter(i -> i.getFullName().equals(this.getEditor().getText())).findAny();
+            return o.map(AccountAutoCompleteItem::getAccountId).orElse(null);
         }
         return this.getSelectionModel().getSelectedItem().getAccountId();
     }

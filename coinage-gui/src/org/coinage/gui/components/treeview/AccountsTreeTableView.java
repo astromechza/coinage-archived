@@ -7,6 +7,9 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.*;
 import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.Account;
+import org.coinage.gui.ConnectionSourceProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.Comparator;
@@ -34,10 +37,9 @@ public class AccountsTreeTableView extends TreeTableView<AccountsTreeData>
 
     public void refreshAll(ConnectionSource source) throws SQLException
     {
-        Dao<Account, Long> accountDao = DaoManager.createDao(source, Account.class);
+        AccountTreeHelper ath = new AccountTreeHelper(source);
+        List<AccountTreeHelper.AccountTreeNode> roots = ath.tree();
 
-        List<Account> accounts = accountDao.queryForAll();
-        List<AccountTreeHelper.AccountTreeNode> roots = AccountTreeHelper.buildAccountTree(accounts);
         this.getRoot().getChildren().clear();
         for (AccountTreeHelper.AccountTreeNode root : roots)
         {
