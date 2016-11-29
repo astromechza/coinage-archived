@@ -105,7 +105,15 @@ public class AccountAutoCompleteComboBox extends ComboBox<AccountAutoCompleteIte
         });
 
         this.focusedProperty().addListener((observable, oldValue, newValue) -> {
-            if (! newValue) AccountAutoCompleteComboBox.this.getTooltip().hide();
+            if (! newValue)
+            {
+                if (this.isShowing() && this.getItems().size() > 0)
+                {
+                    this.getSelectionModel().select(0);
+                }
+
+                AccountAutoCompleteComboBox.this.getTooltip().hide();
+            }
         });
     }
 

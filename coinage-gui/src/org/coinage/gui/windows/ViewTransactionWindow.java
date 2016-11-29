@@ -17,7 +17,6 @@ import org.coinage.core.helpers.AccountTreeHelper;
 import org.coinage.core.models.SubTransaction;
 import org.coinage.core.models.Transaction;
 import org.coinage.gui.ConnectionSourceProvider;
-import org.coinage.gui.components.AccountAutoCompleteComboBox;
 import org.coinage.gui.components.HExpander;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -90,7 +89,6 @@ public class ViewTransactionWindow extends BaseWindow
                 }
             }
             commentBox.setText(transaction.getComment());
-            ((VBox) this.getRootLayout()).getChildren().add(new AccountAutoCompleteComboBox(nameMap));
         }
         catch (SQLException e)
         {

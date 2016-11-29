@@ -2,9 +2,6 @@ package org.coinage.gui.windows;
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
-import javafx.beans.property.SimpleListProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -44,54 +41,26 @@ public class NewTransactionWindow extends BaseWindow
 {
     private DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private DecimalFormat displayFormat = new DecimalFormat("#,##0.00");
+
+    // components
     private Button cancelBtn;
     private Button createBtn;
     private Label fromAccountLabel;
     private Label commentLabel;
     private DatePicker dateField;
     private TimeField timeField;
-    private Map<Long, String> nameMap;
-
-    private static class AccountComboItem
-    {
-        private final String name;
-        private final Long id;
-
-        public AccountComboItem(String name, Long id)
-        {
-            this.name = name;
-            this.id = id;
-        }
-
-        public String getName()
-        {
-            return this.name;
-        }
-
-        public Long getId()
-        {
-            return this.id;
-        }
-
-        @Override
-        public String toString()
-        {
-            return this.name;
-        }
-    }
-
-    private ObservableList<AccountComboItem> accountItems;
     private AccountAutoCompleteComboBox fromAccountBox;
     private Button newToAccountBtn;
     private VBox toAccountRows;
     private Label totalLabel;
     private TextArea commentBox;
 
+    private Map<Long, String> nameMap;
+
     public NewTransactionWindow() throws IOException
     {
         this.initialise();
         this.fillAccountsList();
-
         this.addNewAccountRow();
     }
 
@@ -116,6 +85,7 @@ public class NewTransactionWindow extends BaseWindow
         this.newToAccountBtn = new Button("+");
         this.totalLabel = new Label("R 0.00");
         this.commentBox = new TextArea();
+        commentBox.setPromptText("Describe the transaction");
         cancelBtn = new Button("Cancel");
         createBtn = new Button("Create");
         fromAccountLabel = new Label("From account:");
@@ -148,12 +118,17 @@ public class NewTransactionWindow extends BaseWindow
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
 
-        HBox topRow = new HBox(10, fromAccountLabel, fromAccountBox, totalLabel);
+        HBox topRow = new HBox(10, fromAccountLabel, new HExpander(), fromAccountBox, totalLabel);
         topRow.setAlignment(Pos.CENTER_LEFT);
         fromAccountBox.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(fromAccountBox, Priority.ALWAYS);
+        fromAccountBox.setMinWidth(250);
+        HBox.setHgrow(fromAccountBox, Priority.SOMETIMES);
+        totalLabel.setMinWidth(110);
+        totalLabel.setAlignment(Pos.CENTER_RIGHT);
 
         HBox dateRow = new HBox(10, new Label("Transaction Date:"), new HExpander(), dateField, timeField);
+        timeField.setMinWidth(110);
+        dateField.setMinWidth(250);
         dateRow.setAlignment(Pos.CENTER_LEFT);
 
         VBox topRows = new VBox(10);
@@ -174,7 +149,7 @@ public class NewTransactionWindow extends BaseWindow
 
         middle.setCenter(pane2);
 
-        this.commentBox.setPrefSize(400, 100);
+        this.commentBox.setPrefSize(500, 100);
         VBox commentVBox = new VBox(10, commentLabel, this.commentBox);
         middle.setBottom(commentVBox);
 
@@ -183,22 +158,53 @@ public class NewTransactionWindow extends BaseWindow
         return root;
     }
 
-    @Override
-    public void bindEvents()
+    private void validateNewTransaction()
     {
-        this.newToAccountBtn.setOnAction(event -> this.addNewAccountRow());
-        this.cancelBtn.setOnAction(event -> this.getStage().close());
-        this.createBtn.setOnAction(event -> {
-
-            // capture and validate the FROM account
-            Long fromAccountId = this.fromAccountBox.getSelectedAccount();
-            String fromAccountName = this.fromAccountBox.getSelectedAccountName();
-            if (fromAccountId == null)
+        // capture and validate the FROM account
+        Long fromAccountId = this.fromAccountBox.getSelectedAccount();
+        String fromAccountName = this.fromAccountBox.getSelectedAccountName();
+        if (fromAccountId == null)
+        {
+            if (fromAccountName.isEmpty())
             {
-                if (fromAccountName.isEmpty())
+                this.fromAccountBox.requestFocus();
+                QuickDialogs.error("Please select an account to transaction from!");
+                return;
+            }
+            try
+            {
+                Account.AssertValidAccountTree(fromAccountName);
+            }
+            catch (AssertionError e)
+            {
+                this.fromAccountBox.requestFocus();
+                QuickDialogs.error("From account '%s' was invalid %s", fromAccountName, e.getMessage());
+                return;
+            }
+        }
+
+        // capture and validate the TO accounts and values
+        Set<String> mentionedAccounts = new HashSet<>();
+        for (Node n : toAccountRows.getChildren())
+        {
+            HBox hb = (HBox)n;
+            AccountAutoCompleteComboBox cb = (AccountAutoCompleteComboBox)hb.getChildren().get(0);
+            CurrencyField cf = (CurrencyField)hb.getChildren().get(1);
+            if (cf.getDecimal() == null || cf.getDecimal().equals(BigDecimal.ZERO))
+            {
+                QuickDialogs.error("One of your currency field inputs is empty or zero!");
+                return;
+            }
+
+            Long toAccountId = cb.getSelectedAccount();
+            String toAccountName = cb.getSelectedAccountName();
+
+            if (toAccountId == null)
+            {
+                if (toAccountName.isEmpty())
                 {
-                    this.fromAccountBox.requestFocus();
-                    QuickDialogs.error("Please select an account to transaction from!");
+                    cb.requestFocus();
+                    QuickDialogs.error("Please fill in destination account for all subtransactions!");
                     return;
                 }
                 try
@@ -207,126 +213,109 @@ public class NewTransactionWindow extends BaseWindow
                 }
                 catch (AssertionError e)
                 {
-                    this.fromAccountBox.requestFocus();
-                    QuickDialogs.error("From account '%s' was invalid %s", fromAccountName, e.getMessage());
+                    cb.requestFocus();
+                    QuickDialogs.error("To account '%s' was invalid: %s", toAccountName, e.getMessage());
                     return;
                 }
             }
 
-            // capture and validate the TO accounts and values
-            Set<String> mentionedAccounts = new HashSet<>();
-            for (Node n : toAccountRows.getChildren())
+            if (toAccountName.equals(fromAccountName))
             {
-                HBox hb = (HBox)n;
-                AccountAutoCompleteComboBox cb = (AccountAutoCompleteComboBox)hb.getChildren().get(0);
-                CurrencyField cf = (CurrencyField)hb.getChildren().get(1);
-                if (cf.getDecimal() == null || cf.getDecimal().equals(BigDecimal.ZERO))
-                {
-                    QuickDialogs.error("One of your currency field inputs is empty or zero!");
-                    return;
-                }
-
-                Long toAccountId = cb.getSelectedAccount();
-                String toAccountName = cb.getSelectedAccountName();
-
-                if (toAccountId == null)
-                {
-                    if (toAccountName.isEmpty())
-                    {
-                        cb.requestFocus();
-                        QuickDialogs.error("Please fill in destination account for all subtransactions!");
-                        return;
-                    }
-                    try
-                    {
-                        Account.AssertValidAccountTree(fromAccountName);
-                    }
-                    catch (AssertionError e)
-                    {
-                        cb.requestFocus();
-                        QuickDialogs.error("To account '%s' was invalid: %s", toAccountName, e.getMessage());
-                        return;
-                    }
-                }
-
-                if (toAccountName.equals(fromAccountName))
-                {
-                    QuickDialogs.error("You cannot transact from and to the same account '%s'!", toAccountName);
-                    return;
-                }
-                if (mentionedAccounts.contains(toAccountName))
-                {
-                    QuickDialogs.error("You've selected account '%s' more than once, please combine those subtransactions!");
-                    return;
-                }
-                mentionedAccounts.add(toAccountName);
-            }
-
-            // validate and capture time and date
-            LocalDate selectedDate = dateField.valueProperty().get();
-            if (selectedDate == null)
-            {
-                QuickDialogs.error("Please fill in the date field!");
+                QuickDialogs.error("You cannot transact from and to the same account '%s'!", toAccountName);
                 return;
             }
-
-            LocalTime selectedTime = timeField.timeProperty.get();
-            if (selectedTime == null)
+            if (mentionedAccounts.contains(toAccountName))
             {
-                QuickDialogs.error("Please fill in the time field!");
+                QuickDialogs.error("You've selected account '%s' more than once, please combine those subtransactions!");
                 return;
             }
-            LocalDateTime ldt = selectedDate.atTime(selectedTime);
-            DateTime dt = new DateTime(ldt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+            mentionedAccounts.add(toAccountName);
+        }
 
+        // validate and capture time and date
+        LocalDate selectedDate = dateField.valueProperty().get();
+        if (selectedDate == null)
+        {
+            QuickDialogs.error("Please fill in the date field!");
+            return;
+        }
+
+        LocalTime selectedTime = timeField.timeProperty.get();
+        if (selectedTime == null)
+        {
+            QuickDialogs.error("Please fill in the time field!");
+        }
+    }
+
+    private void submitNewTransaction() throws SQLException
+    {
+        // capture and validate the FROM account
+        Long fromAccountId = this.fromAccountBox.getSelectedAccount();
+        String fromAccountName = this.fromAccountBox.getSelectedAccountName();
+
+        // capture time and date
+        LocalDate selectedDate = dateField.valueProperty().get();
+        LocalTime selectedTime = timeField.timeProperty.get();
+        LocalDateTime ldt = selectedDate.atTime(selectedTime);
+        DateTime dt = new DateTime(ldt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+
+        Dao<Transaction, Long> transactionDao = DaoManager.createDao(ConnectionSourceProvider.get(), Transaction.class);
+        Dao<SubTransaction, Long> subtransactionDao = DaoManager.createDao(ConnectionSourceProvider.get(), SubTransaction.class);
+
+        AccountTreeHelper ath = new AccountTreeHelper(ConnectionSourceProvider.get());
+
+        // build from account if it doesnt exist
+        Account fromAccount;
+        if (fromAccountId == null)
+            fromAccount = ath.createAccountAndParents(fromAccountName, false);
+        else
+            fromAccount = new Account(fromAccountId);
+
+        Transaction transaction = new Transaction(dt, commentBox.getText().trim());
+        transaction.setSubTransactions(transactionDao.getEmptyForeignCollection("subtransactions"));
+        transactionDao.create(transaction);
+
+        BigDecimal inversion = BigDecimal.ZERO;
+        List<SubTransaction> subtransactions = new ArrayList<>();
+        for (Node n : toAccountRows.getChildren())
+        {
+            HBox hb = (HBox)n;
+            AccountAutoCompleteComboBox cb = (AccountAutoCompleteComboBox)hb.getChildren().get(0);
+            CurrencyField cf = (CurrencyField)hb.getChildren().get(1);
+
+            Long toAccountId = cb.getSelectedAccount();
+            String toAccountName = cb.getSelectedAccountName();
+
+            Account toAccount;
+            if (toAccountId == null)
+                toAccount = ath.createAccountAndParents(toAccountName, false);
+            else
+                toAccount = new Account(toAccountId);
+
+            subtransactions.add(new SubTransaction(transaction, toAccount, fromAccount, cf.getDecimal()));
+            inversion = inversion.add(cf.getDecimal().negate());
+        }
+        subtransactions.add(new SubTransaction(transaction, fromAccount, inversion));
+        subtransactionDao.create(subtransactions);
+        ath.refreshTree();
+    }
+
+    @Override
+    public void bindEvents()
+    {
+        this.newToAccountBtn.setOnAction(event -> this.addNewAccountRow());
+        this.cancelBtn.setOnAction(event -> this.getStage().close());
+        this.createBtn.setOnAction(event -> {
+            this.validateNewTransaction();
             try
             {
-                Dao<Transaction, Long> transactionDao = DaoManager.createDao(ConnectionSourceProvider.get(), Transaction.class);
-                Dao<SubTransaction, Long> subtransactionDao = DaoManager.createDao(ConnectionSourceProvider.get(), SubTransaction.class);
-
-                AccountTreeHelper ath = new AccountTreeHelper(ConnectionSourceProvider.get());
-
-                // build from account if it doesnt exist
-                Account fromAccount;
-                if (fromAccountId == null)
-                    fromAccount = ath.createAccountAndParents(fromAccountName, false);
-                else
-                    fromAccount = new Account(fromAccountId);
-
-                Transaction transaction = new Transaction(dt, commentBox.getText().trim());
-                transaction.setSubTransactions(transactionDao.getEmptyForeignCollection("subtransactions"));
-                transactionDao.create(transaction);
-
-                BigDecimal inversion = BigDecimal.ZERO;
-                List<SubTransaction> subtransactions = new ArrayList<>();
-                for (Node n : toAccountRows.getChildren())
-                {
-                    HBox hb = (HBox)n;
-                    AccountAutoCompleteComboBox cb = (AccountAutoCompleteComboBox)hb.getChildren().get(0);
-                    CurrencyField cf = (CurrencyField)hb.getChildren().get(1);
-
-                    Long toAccountId = cb.getSelectedAccount();
-                    String toAccountName = cb.getSelectedAccountName();
-
-                    Account toAccount;
-                    if (toAccountId == null)
-                        toAccount = ath.createAccountAndParents(toAccountName, false);
-                    else
-                        toAccount = new Account(toAccountId);
-
-                    subtransactions.add(new SubTransaction(transaction, toAccount, fromAccount, cf.getDecimal()));
-                    inversion = inversion.add(cf.getDecimal().negate());
-                }
-                subtransactions.add(new SubTransaction(transaction, fromAccount, inversion));
-                subtransactionDao.create(subtransactions);
-                ath.refreshTree();
+                this.submitNewTransaction();
                 this.getStage().close();
             }
             catch (SQLException e)
             {
-                e.printStackTrace();
+                QuickDialogs.exception(e);
             }
-
         });
     }
 
